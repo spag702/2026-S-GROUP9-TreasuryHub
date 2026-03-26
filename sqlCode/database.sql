@@ -70,6 +70,8 @@ CREATE TABLE files (
 --  - before_data: JSON snapshot of the object before the change
 --  - after_data: JSON snapshot of the object after the change
 --  - created_at: timestamp of when the audit entry was created
+-- Note: audit logs for an organization must be archived or manually deleted before 
+-- an organization could be deleted.
 CREATE TABLE audit_logs (
     audit_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id         UUID NOT NULL REFERENCES organizations(org_id) ON DELETE RESTRICT, 
