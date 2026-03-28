@@ -15,16 +15,17 @@ CREATE TABLE organizations (
 );
 
 -- Users Table
--- Added this in with some starting fields, as it will need to be used for 
--- work with uploading/viewing files, as we will need to check users accessing 
--- files and create necessary restrictions. For now, left it with user_id, 
--- this will need to be expanded on further. This links to supabase built 
--- in auth table for users. 
--- See docs on this at https://supabase.com/docs/guides/auth/managing-user-data
--- except we would be using a public users table rather than "profiles"
+-- Public mirror of auth.users. Auto-populated via trigger on registration.
+-- Teammates: query this table to look up users by ID or email.
 CREATE TABLE users (
-    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
+    user_id      UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email        TEXT NOT NULL,
+    display_name TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX idx_users_email ON users(email);
 
 -- Org Members Table
 -- Added this in with some starting fields, may need
@@ -60,6 +61,29 @@ CREATE TABLE files (
     uploaded_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Audit Log Table
+--  - audit_id: unique identifier for each log entry
+--  - org_id: identifies the organization the entry belongs to
+--  - user_id: identifies which user performed the action
+--  - action: type of change (CREATE, UPDATE, DELETE)
+--  - entity: type of object affected (transactions and files for now)
+--  - before_data: JSON snapshot of the object before the change
+--  - after_data: JSON snapshot of the object after the change
+--  - created_at: timestamp of when the audit entry was created
+-- Note: audit logs for an organization must be archived or manually deleted before 
+-- an organization could be deleted.
+CREATE TABLE audit_logs (
+    audit_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id         UUID NOT NULL REFERENCES organizations(org_id) ON DELETE RESTRICT, 
+    user_id        UUID REFERENCES users(user_id) ON DELETE RESTRICT,
+    action         TEXT NOT NULL CHECK (action IN ('CREATE', 'UPDATE', 'DELETE')),
+    entity         TEXT NOT NULL, -- This is for 'transaction', ' file', etc.
+    entity_id      UUID NOT NULL, 
+    before_data    JSONB,
+    after_data     JSONB,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+
 -- Roles Table
 
 -- Quotes Table
@@ -81,6 +105,9 @@ CREATE TABLE quotes (
 
 -- Enable RLS on files table
 ALTER TABLE files ENABLE ROW LEVEL SECURITY;
+
+-- Enable RLS on audit_log table
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Only treasurer can view all files in their org
 CREATE POLICY "Treasurer can view files"
@@ -115,6 +142,37 @@ USING (
     )
 );
 
+-- Only treasurer can view audit logs
+CREATE POLICY "Treasurer can view audit logs"
+ON audit_logs FOR SELECT 
+USING (
+    org_id IN (
+        SELECT org_id FROM org_members
+        WHERE user_id = auth.uid()
+        AND role = 'treasurer'
+    )
+);
+
+-- Automatically create a public users row when someone signs up
+-- This trigger fires after every new auth.users insert
+-- Populates user_id and email from the auth.users row
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.users (user_id, email, display_name)
+  VALUES (
+    new.id,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1))
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Attach the trigger to auth.users
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- Storage Policies:
