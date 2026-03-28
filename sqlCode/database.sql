@@ -87,7 +87,7 @@ CREATE TABLE audit_logs (
 -- Roles Table
 
 -- Quotes Table
-CREATE TABLE quotes (
+CREATE TABLE IF NOT EXISTS quotes (
     quotes_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id          UUID NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
     vendor          TEXT NOT NULL,
