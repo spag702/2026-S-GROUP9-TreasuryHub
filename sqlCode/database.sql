@@ -164,7 +164,19 @@ USING (
 
 DROP POLICY IF EXISTS "Treasurer can view audit logs" ON audit_logs;
 CREATE POLICY "Treasurer can view audit logs"
-ON audit_logs FOR SELECT
+ON audit_logs FOR SELECT 
+USING (
+    org_id IN (
+        SELECT org_id FROM org_members
+        WHERE user_id = auth.uid()
+        AND role = 'treasurer'
+    )
+);
+
+-- Only treasurer can export csv of transactions
+DROP POLICY IF EXISTS "Treasurer can export transactions" ON transactions;
+CREATE POLICY "Treasurer can export transactions"
+ON transactions FOR SELECT
 USING (
     org_id IN (
         SELECT org_id FROM org_members
