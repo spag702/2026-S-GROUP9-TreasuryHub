@@ -93,9 +93,9 @@ CREATE TABLE quotes (
     vendor          TEXT NOT NULL,
     memo            TEXT NOT NULL,
     amount          NUMERIC(12,2) NOT NULL CHECK (amount >0),
-    accepted        BOOL
-    uploaded_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-)
+    accepted        BOOL NOT NULL DEFAULT false,
+    uploaded_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
 
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
