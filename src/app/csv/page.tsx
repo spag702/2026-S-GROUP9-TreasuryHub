@@ -1,8 +1,9 @@
 "use client";
 
 import { exportCSV } from "./action";
-export default function CSVPage() {
-    const organizationId = "10148741-4cbb-4d58-977d-13fdd4398eb4"; //Amaze organization ID for testing purposes
+
+export default function CSVPage( ) {
+    const organizationId = "10148741-4cbb-4d58-977d-13fdd4398eb4"; // orgID for testorg1 but will need to be dynamic in the future
     const handleExport = async (organizationId: string) => {
     const result = await exportCSV(organizationId);
     if ('error' in result) return;
