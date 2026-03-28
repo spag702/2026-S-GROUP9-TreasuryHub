@@ -111,10 +111,10 @@ CREATE TABLE IF NOT EXISTS quotes (
     org_id          UUID NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
     vendor          TEXT NOT NULL,
     memo            TEXT NOT NULL,
-    amount          NUMERIC(12,2) NOT NULL CHECK (amount > 0),
-    accepted        BOOL,
+    amount          NUMERIC(12,2) NOT NULL CHECK (amount >0),
+    accepted        BOOL NOT NULL DEFAULT false,
     uploaded_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL
-)
+);
 
 
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
