@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { AuditLogType } from "./auditType";
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // getDiff
@@ -21,7 +22,10 @@ function getDiff(before: any, after: any) {
   const changes = [];
 
   for (const field of fields) {
-    if (beforeObj[field] !== afterObj[field]) {
+    const beforeValue = beforeObj[field];
+    const afterValue = afterObj[field];
+
+    if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
       changes.push({
         field,
         oldValue: beforeObj[field] ?? "-",
@@ -31,6 +35,61 @@ function getDiff(before: any, after: any) {
   }
 
   return changes;
+}
+
+// formatAction
+// Converts action types to more user-friendly text
+const formatAction = (action: string) => {
+    switch (action) {
+        case "CREATE":
+            return "Created";
+        case "UPDATE":
+            return "Updated";
+        case "DELETE":
+            return "Deleted";
+        default:
+            return action;
+    }
+};
+
+// renderDetails
+// Renders the details of an audit log entry based on the action type
+// - For CREATE actions, it shows the after_data fields
+// - For DELETE actions, it shows the before_data fields
+// - For UPDATE actions, it shows a side-by-side comparison of changed fields using getDiff
+function renderDetails(log: any) {
+
+    if (log.action === "CREATE") {
+        const after = log.after_data ?? {};
+
+        return Object.entries(after).map(([field, value]) => (
+            <div key={field}>
+                <strong>{field}:</strong>: {String(value)}
+            </div>
+        ));
+    }
+
+    if (log.action === "DELETE") {
+        const before = log.before_data ?? {};
+
+        return Object.entries(before).map(([field, value]) => (
+            <div key={field}>
+                <strong>{field}:</strong> {String(value)}
+            </div>
+        ));
+    }
+
+    const changes = getDiff(log.before_data, log.after_data);
+
+    if (changes.length === 0) {
+        return <div>No changes</div>;
+    }
+
+    return changes.map((change: any, index: number) => (
+            <div key={index}>
+                <strong>{change.field}:</strong> {change.oldValue} → {change.newValue}
+            </div>  
+        ));
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,28 +151,37 @@ export default function AuditPage(){
         fetchOrg();
     }, [userId, supabase])
 
-
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Fetch the latest audit log data
     useEffect(() => {
         if (!orgId) return;
         const fetchLogs = async () => {
-            const {data, error} = await supabase
+            let query = supabase
             .from("audit_logs")
-            .select("*, users (display_name)")
+            .select(`*, users (display_name)`)
             .eq("org_id", orgId)
-            .order("created_at", {ascending: false})
-            .limit(10);
+            .order("created_at", { ascending: false })
+            .limit(50);
 
-            if (data) {
-                setLogs(data);
+            console.log("Role:", role);
+
+            if (role == 'treasurer') {
+                console.log("Filtering for financial logs only");
+                console.log("AuditLogType.FINANCIAL:", AuditLogType.FINANCIAL);
+                query = query.eq("type", AuditLogType.FINANCIAL);
             }
-            else if (error){ 
+
+            const { data, error } = await query;
+
+            if (error) {
                 console.error("Error fetching audit logs:", error);
+                return;
             }
+
+            setLogs(data || []);
         };
         fetchLogs();
-    }, [orgId, supabase]);
+    }, [orgId, supabase, role]);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Fetch the Display Roles for users of the organization
@@ -160,18 +228,6 @@ export default function AuditPage(){
         borderTop: "2px solid #d1d5db",
     };
 
-    const boldCellStyle: React.CSSProperties = {
-        border: "1px solid #374151",
-        padding: "10px",
-        borderTop: "2px solid #d1d5db",
-        fontWeight: "500",
-    };
-
-    const specialCellStyle: React.CSSProperties = {
-        border: "1px solid #374151",
-        padding: "10px",
-    };
-
     const headerStyle = {
         border: "1px solid #e5e7eb",
         backgroundColor: "#111827",
@@ -192,6 +248,7 @@ export default function AuditPage(){
         borderCollapse: "collapse" as const,
         fontSize: "14px",
     };
+
 
     if (!role) {
         return (
@@ -226,71 +283,47 @@ export default function AuditPage(){
                     <thead>
                         <tr>
                             {/* Column headers */}
-                            <th style={headerStyle}>Data</th>
                             <th style={headerStyle}>User</th>
                             <th style={headerStyle}>Role</th>
-                            <th style={headerStyle}>Action</th>
-                            <th style={headerStyle}>Item</th>
-                            <th style={headerStyle}>Field</th>
-                            <th style={headerStyle}>Old Value</th>
-                            <th style={headerStyle}>New Value</th>
+                            <th style={headerStyle}>Timestamp</th>
+                            <th style={headerStyle}>Action Type</th>
+                            <th style={headerStyle}>Description</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        {/* Loop through each audit log entry */}
-                        {logs.map((log, logIndex) => {
-                            const diffs = getDiff(log.before_data, log.after_data);
-                            return diffs.map((diff, index) => (
-                                <tr
-                                key={`${log.audit_id}-${index}`}
+                    {logs.map((log) => {
+                        return (
+                            <tr key={log.audit_id}>
 
-                                // Alternate row colors
-                                 style={{backgroundColor: logIndex % 2 === 0 ? "#111827" : "#1f2637",}}>
+                                {/* User Column */}
+                                <td style={cellStyle}>
+                                    {log.users?.display_name || "Unknown User"}
+                                </td>
 
-                                    {/* Renders cell once per log and merges multiple diff rows using rowSpan */}
-                                    {index === 0 && (
-                                        <>
-                                            {/* Date */}
-                                            <td rowSpan={diffs.length} style={boldCellStyle}>
-                                                {new Date(log.created_at).toLocaleDateString()}
-                                            </td>
-                                            
-                                            {/* User */}
-                                            <td rowSpan={diffs.length} style={cellStyle}>
-                                                {log.users?.display_name || "Unknown User"}
-                                            </td>
+                                {/* Role Column */}
+                                <td style={cellStyle}>
+                                    {role || "Unknown Role"}
+                                </td>
 
-                                            {/* Role */}
-                                            <td rowSpan={diffs.length} style={cellStyle}>
-                                                {roleMap.get(log.user_id) || "Unknown Role"}
-                                            </td>
+                                {/* Timestamp Column */}
+                                <td style={cellStyle}>
+                                    {new Date(log.created_at).toLocaleString()}
+                                </td>
 
-                                            {/* Action */}
-                                            <td rowSpan={diffs.length} style={cellStyle}>
-                                                {log.action}
-                                            </td>
+                                {/* Action Type Column */}
+                                <td style={cellStyle}>
+                                    {formatAction(log.action)}
+                                </td>
 
-                                            {/* Item */}
-                                            <td rowSpan={diffs.length} style={cellStyle}>
-                                                {log.entity}-{log.entity_id.slice(0, 8)}
-                                            </td>
-                                        </>
-                                    )}
-
-                                    {/* These cells change per diff, they could contain more than one value to display */}
-                                    {/* Field */}
-                                    <td style={specialCellStyle}>{diff.field}</td>
-
-                                    {/* Old Value */}
-                                    <td style={specialCellStyle}>{diff.oldValue === "-" ? "—" : String(diff.oldValue)}</td>
-
-                                    {/* New Value */}
-                                    <td style={specialCellStyle}>{diff.newValue === "-" ? "—" : String(diff.newValue)}</td>
-                                 </tr>
-                            ));
-                        })}
-                    </tbody>
+                                {/* Description Column */}
+                                <td style={cellStyle}>
+                                    {renderDetails(log)}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
                 </table>
             </div>
         </div>
