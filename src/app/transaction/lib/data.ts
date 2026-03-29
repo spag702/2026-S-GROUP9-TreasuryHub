@@ -25,14 +25,14 @@ export async function fetchOrgFromCurrentUser() {
       .from('org_members')
       .select('org_id')
       .eq("user_id", userId)
-      .single();
+      .limit(1);
 
     if (error) {
       console.error('Database error:', error.message);
       throw new Error('Failed to fetch org_id from user_id.');
     }
 
-    return data.org_id;
+    return data[0].org_id;
 }
 
 export async function fetchUserId() {

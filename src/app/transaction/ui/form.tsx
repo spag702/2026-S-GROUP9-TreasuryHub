@@ -5,6 +5,8 @@ import { getToday } from "@/app/transaction/lib/util";
 import { createTransaction, type Transaction, updateTransaction } from "@/app/transaction/lib/actions";
 import { useActionState } from "react";
 
+// TODO: Only remove the field that had an error: keep repsonses for the rest
+
 export function CreateTransactionForm() {
   const today = getToday();
   const [state, formAction] = useActionState(createTransaction, undefined);
