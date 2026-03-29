@@ -1,14 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { exportCSV } from "./action";
 
 export default function CSVPage( ) {
-    const organizationId = "10148741-4cbb-4d58-977d-13fdd4398eb4"; // orgID for testorg1 but will need to be dynamic in the future
-    const handleExport = async (organizationId: string) => {
-    const result = await exportCSV(organizationId);
-    if ('error' in result) return;
+    const [error, setError] = useState<string | null>(null);
+    
+    const handleExport = async () => {
+        setError(null);
+        const result = await exportCSV();
+
+        if ('error' in result) {
+            setError(result.error ?? "An error occurred during export.");
+            return;
+    }
+
     const data = result.data;
-    if (!data) return;
+    if (!data || data.length === 0) {
+        setError("No transactions found to export.");
+        return;
+    }
 
     const headers = Object.keys(data[0]).join(",");
     const rows = data.map(row => Object.values(row).join(",")).join("\n");
@@ -26,7 +37,8 @@ export default function CSVPage( ) {
     return (
         <div>
             <h1>Exporting Transactions into CSV File</h1>
-            <button onClick={() => handleExport(organizationId)}
+            {error && <p className="text-red-500">{error}</p>}
+            <button onClick={() => handleExport()}
                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 active:scale-95 transition-all">
                 Export Transactions
             </button>
