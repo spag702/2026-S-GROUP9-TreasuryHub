@@ -2,32 +2,47 @@ import Link from "next/link";
 import {
   getOrganizationById,
   getOrganizationMembers,
+  ORGANIZATION_MEMBER_ROLE_OPTIONS,
 } from "@/lib/organizations";
-import { requireOrganizationMemberManagementAccess } from "./actions";
+import {
+  addOrganizationMember,
+  removeOrganizationMember,
+  requireOrganizationMemberManagementAccess,
+  updateOrganizationMemberRole,
+} from "./actions";
 
 type MembersPageProps = {
   params: Promise<{
     orgId: string;
   }>;
+  searchParams: Promise<{
+    error?: string;
+    success?: string;
+  }>;
 };
 
 export default async function OrganizationMembersPage({
   params,
+  searchParams,
 }: MembersPageProps) {
-  // Grab the dynamic org id from the route.
-  // This page is meant to live under one specific organization.
   const { orgId } = await params;
+  const { error, success } = await searchParams;
 
-  // Before we show anything, make sure this user is actually allowed
-  // to manage members for this org. If not, the helper will redirect.
-  await requireOrganizationMemberManagementAccess(orgId);
+  // Still protect the page itself, same as PR1.
+  const currentMembership =
+    await requireOrganizationMemberManagementAccess(orgId);
 
-  // Load the org info and its members at the same time since the page
-  // needs both anyway.
+  // Load page data in parallel.
   const [organization, members] = await Promise.all([
     getOrganizationById(orgId),
     getOrganizationMembers(orgId),
   ]);
+
+  // Bind orgId once so the forms can just call the actions directly.
+  const addMemberForOrganization = addOrganizationMember.bind(null, orgId);
+  const updateMemberRoleForOrganization =
+    updateOrganizationMemberRole.bind(null, orgId);
+  const removeMemberFromOrganization = removeOrganizationMember.bind(null, orgId);
 
   return (
     <main className="min-h-screen p-6">
@@ -48,13 +63,68 @@ export default async function OrganizationMembersPage({
           </Link>
         </div>
 
+        {success && (
+          <div className="rounded border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-200">
+            {success}
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
+        <section className="rounded border p-4">
+          <div className="mb-4">
+            <h2 className="text-lg font-medium">Add Member</h2>
+            <p className="text-sm">
+              Add an existing TreasuryHub user to this organization by email.
+            </p>
+          </div>
+
+          <form
+            action={addMemberForOrganization}
+            className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-end"
+          >
+            <label className="flex flex-col gap-2 text-sm">
+              <span>Email</span>
+              <input
+                name="email"
+                type="email"
+                required
+                placeholder="member@example.com"
+                className="rounded border bg-transparent px-3 py-2"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm">
+              <span>Role</span>
+              <select
+                name="role"
+                defaultValue="member"
+                className="rounded border bg-transparent px-3 py-2"
+              >
+                {ORGANIZATION_MEMBER_ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role.replaceAll("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button type="submit" className="rounded border px-4 py-2">
+              Add Member
+            </button>
+          </form>
+        </section>
+
         <section className="rounded border p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-medium">Current Members</h2>
               <p className="text-sm">
-                This PR is intentionally read-only for now. The actual add/update/remove
-                actions should go in PR 2.
+                Update roles or remove members from this organization.
               </p>
             </div>
           </div>
@@ -69,23 +139,70 @@ export default async function OrganizationMembersPage({
                     <th className="px-3 py-2 font-medium">Name</th>
                     <th className="px-3 py-2 font-medium">Email</th>
                     <th className="px-3 py-2 font-medium">Role</th>
+                    <th className="px-3 py-2 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((member) => {
-                    // If display_name is blank/null, fall back to something reasonable
-                    // so the table still looks clean.
-                    const displayName = member.users?.display_name?.trim();
-                    const email = member.users?.email ?? "Unknown email";
+                    const displayName = member.user?.display_name?.trim();
+                    const email = member.user?.email?.trim();
+                    const isCurrentManager =
+                      member.user_id === currentMembership.user_id;
 
                     return (
                       <tr key={member.user_id} className="border-b last:border-b-0">
-                        <td className="px-3 py-2">{displayName || "Unnamed User"}</td>
-                        <td className="px-3 py-2">{email}</td>
-                        <td className="px-3 py-2 capitalize">
-                          {/* Convert values like treasury_team into treasury team
-                              so the UI reads more naturally. */}
-                          {member.role.replaceAll("_", " ")}
+                        <td className="px-3 py-2">
+                          {displayName || email || "Unknown User"}
+                        </td>
+                        <td className="px-3 py-2">{email || "Unknown Email"}</td>
+                        <td className="px-3 py-2">
+                          <form
+                            action={updateMemberRoleForOrganization}
+                            className="flex min-w-[220px] flex-col gap-2 md:flex-row md:items-center"
+                          >
+                            <input type="hidden" name="userId" value={member.user_id} />
+
+                            <select
+                              name="role"
+                              defaultValue={member.role}
+                              disabled={isCurrentManager}
+                              className="rounded border bg-transparent px-3 py-2"
+                            >
+                              {ORGANIZATION_MEMBER_ROLE_OPTIONS.map((role) => (
+                                <option key={role} value={role}>
+                                  {role.replaceAll("_", " ")}
+                                </option>
+                              ))}
+                            </select>
+
+                            <button
+                              type="submit"
+                              disabled={isCurrentManager}
+                              className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Update Role
+                            </button>
+                          </form>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-col gap-2">
+                            <form action={removeMemberFromOrganization}>
+                              <input type="hidden" name="userId" value={member.user_id} />
+                              <button
+                                type="submit"
+                                disabled={isCurrentManager}
+                                className="rounded border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Remove Member
+                              </button>
+                            </form>
+
+                            {isCurrentManager && (
+                              <p className="text-xs text-gray-400">
+                                Your own role/removal is disabled here.
+                              </p>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

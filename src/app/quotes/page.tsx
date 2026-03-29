@@ -1,7 +1,7 @@
 "use client"
 
 import { useDebugValue, useEffect, useState } from "react"
-import { addQuote, getQuotes, acceptQuote } from "./actions"
+import { addQuote, getQuotes, acceptQuote, deleteQuote } from "./actions"
 
 // The Treasurer/Admin can view and review uploaded quotes for products 
 // or services for a certain event with an established budget. They can 
@@ -22,9 +22,17 @@ export default function QuotesPage() {
     const [amount, setAmount] = useState("")
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchQuotes()
-    }, [])
+    const [confirmingId, setConfirmingId] = useState<number | null>(null)
+
+    // delete quote
+    async function handleDeleteQuote(id: number) {
+        const result = await deleteQuote(id)
+        if (result?.error) {
+            setError(result.error)
+        } else {
+            setQuotes(quotes.filter((q) => q.quotes_id !== id))
+        }
+    }
 
     async function fetchQuotes() {
         const result = await getQuotes()
@@ -35,18 +43,22 @@ export default function QuotesPage() {
         }
     }
 
-    async function handleAddQuote(){
-        if (!vendor || !memo || !amount) return 
+    useEffect(() => {
+        fetchQuotes()
+    }, [])
+
+    async function handleAddQuote() {
+        if (!vendor || !memo || !amount) return
         const result = await addQuote(vendor, memo, parseFloat(amount));
 
-        if(result?.error){
+        if (result?.error) {
             setError(result.error);
         }
-        else{
-           await fetchQuotes()
-           setVendor("")
-           setMemo("")
-           setAmount("")
+        else {
+            await fetchQuotes()
+            setVendor("")
+            setMemo("")
+            setAmount("")
         }
     }
 
@@ -83,7 +95,7 @@ export default function QuotesPage() {
                     onChange={(e) => setMemo(e.target.value)}
                     className="border border-gray-300 rounded p-2 text-sm resize-none"
                     rows={3}
-                /> 
+                />
                 <input
                     type="number"
                     placeholder="Amount"
@@ -112,7 +124,7 @@ export default function QuotesPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-sm">${q.amount.toLocaleString()}</span>
-                        
+
                         {/* after the quote is accepted, button changes to a label */}
                         {!q.accepted ? (
                             <button
@@ -124,8 +136,35 @@ export default function QuotesPage() {
                         ) : (
                             <span className="text-xs text-green-700">Accepted</span>
                         )}
-                    </div>    
-                </div>     
+
+                        {confirmingId === q.quotes_id ? (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        handleDeleteQuote(q.quotes_id)
+                                        setConfirmingId(null)
+                                    }}
+                                    className="text-xs px-3 py-1 rounded border border-red-400 text-red-500"
+                                >
+                                    Confirm
+                                </button>
+                                <button
+                                    onClick={() => setConfirmingId(null)}
+                                    className="text-xs px-3 py-1 rounded border border-gray-300 text-gray-400"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setConfirmingId(q.quotes_id)}
+                                className="text-xs px-3 py-1 rounded border border-gray-300 text-gray-400"
+                            >
+                                Delete
+                            </button>
+                        )}
+                    </div>
+                </div>
             ))}
         </div>
     )
