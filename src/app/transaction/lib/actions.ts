@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { fetchOrgFromCurrentUser, fetchUserId } from "@/app/transaction/lib/data";
 import { z } from "zod";
-import { logAuditEntry } from "@/app/audit/action";
-import { AuditLogType } from "@/app/audit/auditType";
+import { logAuditEntry } from "@/app/audit/lib/action";
+import { AuditLogType } from "@/app/audit/lib/data";
 import { after, before } from "node:test";
 
 const TransactionSchema = z.object({

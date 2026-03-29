@@ -2,95 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { AuditLogType } from "./auditType";
+import { AuditLogType } from "./lib/data";
+import { formatAction } from "./lib/util";
+import { renderAuditDetails, cellStyle, headerStyle, containerStyle, tableStyle} from "./lib/render";
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// getDiff
-// Compares before and after objects and
-// returns only the fields that have changed
-//
-// Responsibilities:
-// - field: property name
-// - oldValue: value from the before object (or "-" if undefined)
-// - newValue: value from the after object (or "-" if undefined) 
-
-function getDiff(before: any, after: any) {
-    const beforeObj = before ?? {};
-    const afterObj = after ?? {};
-
-  const fields = new Set([...Object.keys(beforeObj), ...Object.keys(afterObj)]);
-  const changes = [];
-
-  for (const field of fields) {
-    const beforeValue = beforeObj[field];
-    const afterValue = afterObj[field];
-
-    if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
-      changes.push({
-        field,
-        oldValue: beforeObj[field] ?? "-",
-        newValue: afterObj[field] ?? "-",
-      });
-    }
-  }
-
-  return changes;
-}
-
-// formatAction
-// Converts action types to more user-friendly text
-const formatAction = (action: string) => {
-    switch (action) {
-        case "CREATE":
-            return "Created";
-        case "UPDATE":
-            return "Updated";
-        case "DELETE":
-            return "Deleted";
-        default:
-            return action;
-    }
-};
-
-// renderDetails
-// Renders the details of an audit log entry based on the action type
-// - For CREATE actions, it shows the after_data fields
-// - For DELETE actions, it shows the before_data fields
-// - For UPDATE actions, it shows a side-by-side comparison of changed fields using getDiff
-function renderDetails(log: any) {
-
-    if (log.action === "CREATE") {
-        const after = log.after_data ?? {};
-
-        return Object.entries(after).map(([field, value]) => (
-            <div key={field}>
-                <strong>{field}:</strong>: {String(value)}
-            </div>
-        ));
-    }
-
-    if (log.action === "DELETE") {
-        const before = log.before_data ?? {};
-
-        return Object.entries(before).map(([field, value]) => (
-            <div key={field}>
-                <strong>{field}:</strong> {String(value)}
-            </div>
-        ));
-    }
-
-    const changes = getDiff(log.before_data, log.after_data);
-
-    if (changes.length === 0) {
-        return <div>No changes</div>;
-    }
-
-    return changes.map((change: any, index: number) => (
-            <div key={index}>
-                <strong>{change.field}:</strong> {change.oldValue} → {change.newValue}
-            </div>  
-        ));
-}
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AuditPage
@@ -154,7 +69,7 @@ export default function AuditPage(){
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Fetch the latest audit log data
     useEffect(() => {
-        if (!orgId) return;
+        if (!orgId || !role) return;
         const fetchLogs = async () => {
             let query = supabase
             .from("audit_logs")
@@ -184,7 +99,7 @@ export default function AuditPage(){
     }, [orgId, supabase, role]);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Fetch the Display Roles for users of the organization
+    // Fetch the role for each user in the logs for display
     useEffect(() => {
         const fetchDisplayRoles = async () => {
             if(!orgId) return;
@@ -212,43 +127,8 @@ export default function AuditPage(){
         fetchDisplayRoles();
     }, [orgId])
     
-
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Table Styles
-    // - cellStyle: base style for all table cells
-    // - boldCellStyle: same as cellStyle with bold font
-    // - specialCellStyle: style for cell without top border (used for row-spanned cells)
-    // - headerStyle: style applied to table headers
-    // - containerStyle: outer wrapper around the table
-    // - tableStyle: style applied to the table itself
-
-    const cellStyle: React.CSSProperties = {
-        border: "1px solid #374151",
-        padding: "10px",
-        borderTop: "2px solid #d1d5db",
-    };
-
-    const headerStyle = {
-        border: "1px solid #e5e7eb",
-        backgroundColor: "#111827",
-        textAlign: "left" as const,
-        padding: "12px",
-        fontWeight: "600",
-    };
-    
-    const containerStyle = {
-        border: "1px solid #e5e7eb",
-        borderRadius: "8px",
-        overflow: "hidden",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-    };
-
-    const tabelStyle = {
-        width: "100%",
-        borderCollapse: "collapse" as const,
-        fontSize: "14px",
-    };
-
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Display the audit logs in a table format
 
     if (!role) {
         return (
@@ -277,7 +157,7 @@ export default function AuditPage(){
 
             {/* Container around the table*/}
             <div style={containerStyle}>
-                <table style={tabelStyle}>
+                <table style={tableStyle}>
 
                     {/* Table header row */}
                     <thead>
@@ -324,7 +204,7 @@ export default function AuditPage(){
 
                                 {/* Description Column */}
                                 <td style={cellStyle}>
-                                    {renderDetails(log)}
+                                    {renderAuditDetails(log)}
                                 </td>
                             </tr>
                         );
