@@ -1,18 +1,19 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { AuditLogType } from "./auditType";
 
 // List of fields required for an audit log entry
 // This type checks to ensure the correct data is passed to the logAuditEntry function.
 export type LogEntry = {
     orgId: string;
     userId: string;
+    created_at?: Date | string;
     action: "CREATE" | "UPDATE" | "DELETE";
     entity_type: string;
     entity_id: string;
-    before_data?: Record<string, any>;
-    after_data?: Record<string, any>;
+    before_data?: Record<string, any> | null;
+    after_data?: Record<string, any> | null;
+    type: "financial" | "account" | "file" | "system"; 
 }
 
 // Server action to log an audit entry
@@ -25,12 +26,13 @@ export async function logAuditEntry(entry: LogEntry) {
     {
         org_id: entry.orgId,
         user_id: entry.userId,
+        created_at: entry.created_at ? new Date(entry.created_at) : new Date(),
         action: entry.action,
         entity: entry.entity_type,
         entity_id: entry.entity_id,
         before_data: entry.before_data ?? null,
         after_data: entry.after_data ?? null,
-        type: AuditLogType.FINANCIAL, // For now we can default to FINANCIAL, but will need to be changed
+        type: entry.type,
     }
     ]);
 

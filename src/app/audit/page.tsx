@@ -303,7 +303,7 @@ export default function AuditPage(){
 
                                 {/* Role Column */}
                                 <td style={cellStyle}>
-                                    {role || "Unknown Role"}
+                                    {roleMap.get(log.user_id) || "Unknown Role"}
                                 </td>
 
                                 {/* Timestamp Column */}
