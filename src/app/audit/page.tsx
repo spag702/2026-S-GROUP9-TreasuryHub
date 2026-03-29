@@ -46,6 +46,8 @@ export default function AuditPage(){
     const [orgId, setOrgId] = useState<string | null>(null);
     const [logs, setLogs] = useState<any[]>([]);
     const [role, setRole] = useState<string | null>(null);
+    const [roleMap, setRoleMap] = useState<Map<string, string>>(new Map());
+    const canViewAudit = role === "treasurer" || role === "admin";
 
     const supabase = createClient();
 
@@ -60,29 +62,36 @@ export default function AuditPage(){
         }
     };
         getUser();
-    }, []);
+    }, [supabase]);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Fetch the orgId for this user from org_members
+    // Fetch the orgId and role for this user from org_members
     useEffect(() => {
         const fetchOrg = async () => {
             if(!userId) return;
 
             const { data, error} = await supabase
             .from("org_members")
-            .select("org_id")
+            .select("org_id, role")
             .eq("user_id", userId)
             .single();
 
-            if (error) console.error("Error fetching orgId", error);
-            else {
-                console.log("Fetched orgId:", data?.org_id);
-                if (data?.org_id) setOrgId(data.org_id);
-            else console.warn("No org_id found for this user in org_members table");
+            if (error){
+                console.error("Error fetching organizations:", error);
             }
+            
+            if (!data){
+                console.warn("User is not part of any organizations");
+                return;
+            }
+
+            setOrgId(data.org_id);
+            setRole(data.role);
+
         };
         fetchOrg();
     }, [userId, supabase])
+
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Fetch the latest audit log data
@@ -93,7 +102,6 @@ export default function AuditPage(){
             .from("audit_logs")
             .select("*, users (display_name)")
             .eq("org_id", orgId)
-            .eq("entity", "transaction")
             .order("created_at", {ascending: false})
             .limit(10);
 
@@ -108,26 +116,33 @@ export default function AuditPage(){
     }, [orgId, supabase]);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Fetch the roles
+    // Fetch the Display Roles for users of the organization
     useEffect(() => {
-        const fetchRoles = async () => {
-            if(!orgId || !userId) return;
+        const fetchDisplayRoles = async () => {
+            if(!orgId) return;
 
             const{ data, error} = await supabase
             .from("org_members")
-            .select("role")
+            .select("user_id,role")
             .eq("org_id", orgId)
-            .eq("user_id", userId)
-            .single();
 
-            if(data){
-                setRole(data.role);
-            } else if (error) {
-                console.error("Error fetching role:", error);
-            }
+
+            if (error){
+                console.error("Error fetching display roles:", error);
+                return;
+            } 
+            if (!data) return;
+
+            const map = new Map<string, string>();
+
+            data.forEach((member) => {
+                map.set(member.user_id, member.role);
+            });
+
+            setRoleMap(map);
         };
-        fetchRoles();
-    }, [orgId, userId, supabase])
+        fetchDisplayRoles();
+    }, [orgId])
     
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -177,6 +192,24 @@ export default function AuditPage(){
         borderCollapse: "collapse" as const,
         fontSize: "14px",
     };
+
+    if (!role) {
+        return (
+            <div style={{padding: "20px"}}>
+                <h2 style={{marginBottom: "10px"}}>Recent Audit</h2>
+                <p>Loading...</p>
+            </div>
+        );
+    }
+
+    if (!canViewAudit){
+        return (
+            <div style={{padding: "20px"}}>
+                <h2 style={{marginBottom: "10px"}}>Recent Audit</h2>
+                <p>You do not have permission to view audit logs.</p>
+            </div>
+        );
+    }
 
 
     return(
@@ -230,7 +263,7 @@ export default function AuditPage(){
 
                                             {/* Role */}
                                             <td rowSpan={diffs.length} style={cellStyle}>
-                                                {role}
+                                                {roleMap.get(log.user_id) || "Unknown Role"}
                                             </td>
 
                                             {/* Action */}
