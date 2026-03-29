@@ -70,7 +70,7 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
     transaction_id: formData.get("transId"),
     orgId: fetchOrgId,
     type: formData.get("type"),
-    description: formData.get("description"),
+    description: formData.get("desc"),
     category: formData.get("category"),
     amount: formData.get("amount"),
     date: formData.get("date"),
