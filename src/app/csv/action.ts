@@ -1,8 +1,6 @@
 "use server"; 
 
 import { createClient } from "@/lib/supabase/server";
-import CSVPage from "./page";
-
 
 export async function exportCSV(organizationId: string) {
     const supabase = await createClient();
