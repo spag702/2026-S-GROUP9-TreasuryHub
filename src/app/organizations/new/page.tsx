@@ -8,7 +8,7 @@ import BackButton from '@/components/BackButton';
 export default function NewOrganization() {
   return (
     <main>
-        <div>
+        <div className="mt-5 ml-5 flex gap-2">
         {/* This action is called upon form submission */}
             <Form action={createOrganization}>
                 <input
@@ -24,6 +24,7 @@ export default function NewOrganization() {
                 <button
                     //Type of input
                     type="submit"
+                    className="border border-white bg-black-600 text-white px-4 py-2 rounded hover:bg-gray-700 active:scale-95 transition-all"
                 >
                     <p>Create new organization </p>
                 </button>

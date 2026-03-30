@@ -336,9 +336,11 @@ export default function TasksPage() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <div className="flex items-center justify-center mb-3">
+      <div className="flex justify-between mb-6">
         <h1>Task List</h1>
-        <BackButton></BackButton>
+      
+          <BackButton></BackButton>
+        
       </div>
 
       {/* showing current user role just for demo/testing */}

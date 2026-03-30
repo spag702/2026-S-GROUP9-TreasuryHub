@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { signUp } from "./actions";
+import BackButton from "@/components/BackButton";
 
 export default function RegistrationPage(){
     const [email, setEmail] = useState("");
@@ -28,42 +29,46 @@ export default function RegistrationPage(){
     }
 
     return(
-        <div className="mt-5 flex items-center justify-center gap-4">
-            <input 
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="border border-white rounded p-2 text-white bg-transparent"
-                placeholder="Display Name"
-            />
-            <input 
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border border-white rounded p-2 text-white bg-transparent"
-                placeholder="Email"
-            />
-            <input 
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="border border-white rounded p-2 text-white bg-transparent"
-                placeholder="Password"
-            />
-            <input 
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="border border-white rounded p-2 text-white bg-transparent"
-                placeholder="confirmPassword"
-            />
+        <div>
+            <div className="mt-5 flex items-center justify-center gap-4">
+                <input 
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="border border-white rounded p-2 text-white bg-transparent"
+                    placeholder="Display Name"
+                />
+                <input 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="border border-white rounded p-2 text-white bg-transparent"
+                    placeholder="Email"
+                />
+                <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="border border-white rounded p-2 text-white bg-transparent"
+                    placeholder="Password"
+                />
+                <input 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="border border-white rounded p-2 text-white bg-transparent"
+                    placeholder="confirmPassword"
+                />
 
-            {error && <p className="text-red-500">{error}</p>}
-
-            <button onClick={handleSubmit} className="border border-white rounded p-2 text-white hover:bg-white/[0.1]">
-                SUBMIT!
-            </button>
-                    
+                <button onClick={handleSubmit} className="border border-white rounded p-2 text-white hover:bg-white/[0.1]">
+                    SUBMIT!
+                </button>
+                
+                <BackButton />
+            </div>
+            <div className="flex items-center justify-center mb-3">
+                 {error && <p className="text-red-500">{error}</p>}
+            </div>
         </div>
     );
 }
