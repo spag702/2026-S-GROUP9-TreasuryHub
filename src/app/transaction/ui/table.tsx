@@ -19,7 +19,6 @@ export default async function TransactionTable() {
               <th className={tableFieldSpacing}>Description</th>
               <th className={tableFieldSpacing}>Category</th>
               <th className={tableFieldSpacing}>Amount</th>
-              <th className={tableFieldSpacing}>Type</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -39,8 +38,20 @@ export default async function TransactionTable() {
                     </div>
                   </td>
                   <td className={tableFieldSpacing}>{transaction.category}</td>
-                  <td className={tableFieldSpacing}>${transaction.amount}</td>
-                  <td className={tableFieldSpacing}>{transaction.type}</td>
+                  <td className={tableFieldSpacing}>
+                    <p className={transaction.type === "income"
+                      ? `${textColors.green}`
+                      : `${textColors.red}`
+                    }
+                    >
+                    {transaction.type === "income"
+                      ? `+${transaction.amount.toLocaleString("en-US", { style: "currency", currency: "USD" }) }`
+                      : `-${transaction.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}`
+                    }
+                    {/*  $
+                      {transaction.amount}*/}
+                    </p>
+                  </td>
                   <td className={tableFieldSpacing}>
                     <div className="flex space-x-2">
                       <UpdateTransaction id={transaction.transaction_id} />

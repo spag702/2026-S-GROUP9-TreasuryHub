@@ -12,10 +12,9 @@ export default function page(){
         <div className="flex items-center justify-between">
           <div>
             <h1 className={`text-2xl font-semibold ${textColors.primary} mb-1`}>
-              Transaction
+              Transactions
             </h1>
             <p className={`${textColors.secondary}`}>
-              8 Transactions (Change)
             </p>
           </div>
           <CreateTransaction />
