@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
 import { getFiles } from '../../lib/files'
@@ -17,8 +17,7 @@ type OrgOption = {
     org_name: string
     role: string
 }
-
-export default function FilesPage() {
+function FilesPageContent() {
     const searchParams = useSearchParams()
     const orgIdFromParams = searchParams.get('orgId')
 
@@ -308,5 +307,19 @@ export default function FilesPage() {
                 </ul>
             )}
         </div>
+    )
+}
+
+export default function FilesPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="p-8 max-w-4xl mx-auto">
+                    <p className="text-white">Loading...</p>
+                </div>
+            }
+        >
+            <FilesPageContent />
+        </Suspense>
     )
 }

@@ -18,12 +18,14 @@ export default function UploadModal({ orgId, transactionId, onSuccess, onClose }
     const [fileType, setFileType] = useState<'receipt' | 'document'>('receipt')
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [transactions, setTransactions] = useState<{
+    type LinkedTransaction = {
         transaction_id: string
-        description?: string
-        amount?: number
-        date?: string
-    }[]>([])
+        description: string | null
+        amount: number
+        date: string
+    }
+
+    const [transactions, setTransactions] = useState<LinkedTransaction[]>([])
     const [selectedTransaction, setSelectedTransaction] = useState<string>('')
 
     // Load transactions when the modal opens so the user can optionally link a file
