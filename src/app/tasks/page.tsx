@@ -6,6 +6,7 @@ import {
   addTaskAction,
   updateTaskAction,
   deleteTaskAction,
+  getTaskAssignmentOptions,
 } from "./actions";
 import BackButton from "@/components/BackButton";
 
@@ -16,6 +17,7 @@ import BackButton from "@/components/BackButton";
   - assignType: whether it is assigned to a role or an individual
   - assignedTo: the actual role/member name
   - dueDate: optional due date
+  - notify_days_before: how many days before due date we should alert
 */
 type Task = {
   id: number;
@@ -24,6 +26,7 @@ type Task = {
   assignType: "role" | "individual";
   assignedTo: string;
   dueDate?: string;
+  notify_days_before?: number;
 };
 
 /*
@@ -37,28 +40,15 @@ type DatabaseTask = {
   assign_type: "role" | "individual";
   assigned_to: string;
   due_date?: string | null;
+  notify_days_before?: number | null;
 };
 
 /*
   existing roles and members.
   For now they are hardcoded, but later these could come from a database.
 */
-const existingRoles = ["Officer", "Treasurer", "Secretary", "Member"];
-const existingMembers = [
-  "Prabh",
-  "Enrique",
-  "Mathew",
-  "Danilo",
-  "Keith",
-  "Tracy",
-  "Ricardo",
-  "Kaley",
-  "Miguel",
-  "Xae",
-];
 
 /*
-  
   The UC says only officer-level or above can create/edit/delete tasks.
 */
 const currentUserRole = "Officer";
@@ -82,6 +72,10 @@ export default function TasksPage() {
   const [assignedTo, setAssignedTo] = useState("");
   const [dueDate, setDueDate] = useState("");
 
+  // stores real roles and members from the database
+  const [existingRoles, setExistingRoles] = useState<string[]>([]);
+  const [existingMembers, setExistingMembers] = useState<string[]>([]);
+
   /*
     This loads tasks from Supabase when the page first opens.
   */
@@ -102,10 +96,21 @@ export default function TasksPage() {
           assignType: task.assign_type,
           assignedTo: task.assigned_to,
           dueDate: task.due_date ?? "",
+          notify_days_before: task.notify_days_before ?? 3,
         })
       );
 
       setTasks(formattedTasks);
+
+      const optionsResult = await getTaskAssignmentOptions();
+
+      if (optionsResult.error) {
+        alert(optionsResult.error);
+        return;
+      }
+
+      setExistingRoles(optionsResult.roles);
+      setExistingMembers(optionsResult.members);
     };
 
     fetchTasks();
@@ -131,7 +136,6 @@ export default function TasksPage() {
   /*
     FUNCTION: isValidAssignment
     Makes sure the selected role or member actually exists.
-    This is part of the validation requirement in the UC.
   */
   const isValidAssignment = () => {
     if (assignType === "role") {
@@ -334,6 +338,31 @@ export default function TasksPage() {
     return "";
   }
 
+  /*
+    FUNCTION: getNotifications
+    This builds the alert banner list.
+    If a task is within its notify_days_before window, we show it at the top.
+  */
+  function getNotifications(tasks: Task[]) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return tasks.filter((task) => {
+      if (!task.dueDate) return false;
+
+      const due = new Date(task.dueDate);
+      due.setHours(0, 0, 0, 0);
+
+      const diff = Math.floor(
+        (due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      const notifyDays = task.notify_days_before ?? 3;
+
+      return diff <= notifyDays && diff >= 0;
+    });
+  }
+
   return (
     <div style={{ padding: "20px" }}>
       <div className="flex justify-between mb-6">
@@ -342,6 +371,27 @@ export default function TasksPage() {
           <BackButton></BackButton>
         
       </div>
+
+      {/* alert banner for tasks that are getting close to due date */}
+ {getNotifications(tasks).length > 0 && (
+  <div
+    style={{
+      background: "#e5e7eb",
+      color: "#111827",
+      padding: "10px",
+      border: "1px solid #9ca3af",
+      borderRadius: "6px",
+      marginBottom: "20px",
+    }}
+  >
+    <strong>Upcoming Task Alerts:</strong>
+    {getNotifications(tasks).map((task) => (
+      <div key={task.id} style={{ marginTop: "4px" }}>
+        {task.title} is due on {task.dueDate}
+      </div>
+    ))}
+  </div>
+)}
 
       {/* showing current user role just for demo/testing */}
       <p>
