@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/server";
 export type LogEntry = {
     orgId: string;
     userId: string;
-    created_at?: Date | string;
     action: "CREATE" | "UPDATE" | "DELETE";
     entity_type: string;
     entity_id: string;
@@ -26,7 +25,6 @@ export async function logAuditEntry(entry: LogEntry) {
     {
         org_id: entry.orgId,
         user_id: entry.userId,
-        created_at: entry.created_at ? new Date(entry.created_at) : new Date(),
         action: entry.action,
         entity: entry.entity_type,
         entity_id: entry.entity_id,

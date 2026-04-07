@@ -68,7 +68,6 @@ export async function createTransaction(_prevState: any, formData: FormData) {
   await logAuditEntry({
     orgId: orgId,
     userId: userId,
-    created_at: date,
     action: "CREATE",
     entity_type: "transaction",
     entity_id: data.transaction_id,
@@ -151,7 +150,6 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
     await logAuditEntry({
       orgId: orgId,
       userId: beforeData.created_by,
-      created_at: afterData.date,
       action: "UPDATE",
       entity_type: "transaction",
       entity_id: transaction_id,
@@ -193,7 +191,6 @@ export async function deleteTransaction(transaction_id: string, _formData: FormD
   await logAuditEntry({
     orgId: beforeData.org_id,
     userId: beforeData.created_by,
-    created_at: beforeData.date,
     action: "DELETE",
     entity_type: "transaction",
     entity_id: transaction_id,
