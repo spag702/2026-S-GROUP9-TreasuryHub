@@ -64,6 +64,21 @@ export async function createTransaction(_prevState: any, formData: FormData) {
     };
   }
 
+  // Fetch the user's role
+  const { data: roleData, error: roleError } = await supabase
+  .from("org_members")
+  .select("role")
+  .eq("user_id", userId)
+  .eq("org_id", orgId)
+  .single()
+
+  if(roleError) {
+    console.error(error)
+    return {
+      message: "Database Error: Failed to fetch current user's role of active organization"
+    };
+  }
+
   // Insert audit log entry for transaction creation
   await logAuditEntry({
     orgId: orgId,
@@ -76,6 +91,7 @@ export async function createTransaction(_prevState: any, formData: FormData) {
       description, category, type, amount, date, notes
     },
     type: AuditLogType.FINANCIAL,
+    display_role: roleData?.role,
   });
 
   revalidatePath('/transaction')
@@ -144,6 +160,21 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
     };
   }
 
+  // Fetch current user's role
+  const { data: roleData, error: roleError } = await supabase
+  .from('org_members')
+  .select('role') 
+  .eq('user_id', beforeData.created_by)
+  .eq('org_id', orgId)
+  .single()
+
+  if (roleError){
+    console.error(roleError);
+    return {
+      message: "Database Error: Failed to fetch current user's role of active organization"
+    };
+  }
+
   // Insert audit log entry for transaction update
   // Only log if there are changes to the transaction data
   if (JSON.stringify(beforeData) !== JSON.stringify(afterData)) {
@@ -156,6 +187,7 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
       before_data: beforeData,
       after_data: afterData,
       type: AuditLogType.FINANCIAL,
+      display_role: roleData?.role,
     });
   }
 
@@ -179,6 +211,18 @@ export async function deleteTransaction(transaction_id: string, _formData: FormD
     return;
   }
 
+  const { data: roleData, error: roleError } = await supabase
+  .from('org_members')
+  .select('role')
+  .eq('user_id', beforeData.created_by)
+  .eq('org_id', beforeData.org_id)
+  .single()
+
+  if (roleError){
+    console.error(roleError);
+    return;
+  }
+
   const { error } = await supabase
     .from('transactions')
     .delete()
@@ -197,6 +241,7 @@ export async function deleteTransaction(transaction_id: string, _formData: FormD
     before_data: beforeData,
     after_data: null,
     type: AuditLogType.FINANCIAL,
+    display_role: roleData?.role,
   });
 
   revalidatePath('/transaction')
