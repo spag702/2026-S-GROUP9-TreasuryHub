@@ -8,7 +8,7 @@ type Toast = {
   message: string;
 } | null;
 
-export default function ExportCSVButton({ orgId, className }) {
+export default function ExportCSVButton({ orgId, className }: { orgId: string; className?: string }) {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
 
