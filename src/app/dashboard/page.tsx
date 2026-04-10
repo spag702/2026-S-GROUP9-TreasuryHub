@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDashboardData } from "@/lib/supabase/dashboard";
 import OrgSwitcher from '@/components/OrgSwitcher';
 import ExportCSVButton from "@/components/ExportCSVButton";
+import { canExportTransactions, canViewFiles } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -127,6 +128,7 @@ function TransactionsTable({
   title,
   transactions,
   orgId,
+  canExport,
 }: {
   title: string;
   transactions: {
@@ -138,6 +140,7 @@ function TransactionsTable({
     amount: number;
   }[];
   orgId: string;
+  canExport: boolean;
 }) {
   return (
     <section
@@ -172,18 +175,21 @@ function TransactionsTable({
             View Transactions
           </Link>
 
-          <ExportCSVButton orgId={orgId} 
-            className="
-              rounded-xl
-              border border-white/[0.2]
-              bg-blue-500/[0.05]
-              px-4 py-2
-              text-sm font-medium text-white
-              transition
-              hover:border-white/[0.35]
-              hover:bg-blue-100/[0.08]
-            "
-          />
+          {canExport && (
+            <ExportCSVButton
+              orgId={orgId}
+              className="
+                rounded-xl
+                border border-white/[0.2]
+                bg-blue-500/[0.05]
+                px-4 py-2
+                text-sm font-medium text-white
+                transition
+                hover:border-white/[0.35]
+                hover:bg-blue-100/[0.08]
+              "
+            />
+          )}
         </div>
       </div>
 
@@ -281,12 +287,8 @@ export default async function DashboardPage({
   const { orgId } = await searchParams;
   const data = await getDashboardData(orgId);
 
-  const canAccessFiles =
-    data.role === "executive" ||
-    data.role === "advisor" ||
-    data.role === "treasurer" ||
-    data.role === "treasury_team" ||
-    data.role === "admin";
+  const canAccessFiles = canViewFiles(data.role);
+  const canExport = canExportTransactions(data.role);
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -381,6 +383,7 @@ export default async function DashboardPage({
               title="Recent Organization Transactions"
               transactions={data.recentTransactions}
               orgId={data.orgId}
+              canExport={canExport}
             />
 
             <TasksSection orgId={data.orgId} />
@@ -414,6 +417,7 @@ export default async function DashboardPage({
               title="My Recent Transactions"
               transactions={data.recentTransactions}
               orgId={data.orgId}
+              canExport={canExport}
             />
 
             <TasksSection orgId={data.orgId} />
