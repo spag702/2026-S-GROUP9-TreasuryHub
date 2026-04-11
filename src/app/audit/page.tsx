@@ -30,12 +30,12 @@ export default function AuditPage() {
   const [roleMap, setRoleMap] = useState<Map<string, string>>(new Map());
   const hasAuditAccess = canViewAudit(role);
 
-  const supabase = createClient();
-
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Fetch the user id
   useEffect(() => {
     const getUser = async () => {
+      const supabase = createClient();
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -47,13 +47,15 @@ export default function AuditPage() {
     };
 
     getUser();
-  }, [supabase]);
+  }, []);
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Fetch the orgId and role for this user from org_members
   useEffect(() => {
     const fetchOrg = async () => {
       if (!userId) return;
+
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from("org_members")
@@ -75,7 +77,7 @@ export default function AuditPage() {
     };
 
     fetchOrg();
-  }, [userId, supabase]);
+  }, [userId]);
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Fetch the latest audit log data
@@ -83,6 +85,8 @@ export default function AuditPage() {
     if (!orgId || !role) return;
 
     const fetchLogs = async () => {
+      const supabase = createClient();
+
       let query = supabase
         .from("audit_logs")
         .select(`*, users (display_name)`)
@@ -111,13 +115,15 @@ export default function AuditPage() {
     };
 
     fetchLogs();
-  }, [orgId, supabase, role]);
+  }, [orgId, role]);
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Fetch the role for each user in the logs for display
   useEffect(() => {
     const fetchDisplayRoles = async () => {
       if (!orgId) return;
+
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from("org_members")
@@ -141,7 +147,7 @@ export default function AuditPage() {
     };
 
     fetchDisplayRoles();
-  }, [orgId, supabase]);
+  }, [orgId]);
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Display the audit logs in a table format
@@ -166,19 +172,15 @@ export default function AuditPage() {
 
   return (
     <div style={{ padding: "20px" }}>
-      {/* Page Title */}
       <div className="flex items-center justify-between mb-3">
         <h2 style={{ marginBottom: "10px" }}>Recent Audit</h2>
         <BackButton></BackButton>
       </div>
 
-      {/* Container around the table*/}
       <div style={containerStyle}>
         <table style={tableStyle}>
-          {/* Table header row */}
           <thead>
             <tr>
-              {/* Column headers */}
               <th style={headerStyle}>User</th>
               <th style={headerStyle}>Role</th>
               <th style={headerStyle}>Timestamp</th>
@@ -192,30 +194,24 @@ export default function AuditPage() {
             {logs.map((log) => {
               return (
                 <tr key={log.audit_id}>
-                  {/* User Column */}
                   <td style={cellStyle}>
                     {log.users?.display_name || "Unknown User"}
                   </td>
 
-                  {/* Role Column */}
                   <td style={cellStyle}>
                     {roleMap.get(log.user_id) || "Unknown Role"}
                   </td>
 
-                  {/* Timestamp Column */}
                   <td style={cellStyle}>
                     {new Date(log.created_at).toLocaleString()}
                   </td>
 
-                  {/* Action Type Column */}
                   <td style={cellStyle}>{formatAction(log.action)}</td>
 
-                  {/* Item Column */}
                   <td style={cellStyle}>
                     {log.entity}-{log.entity_id?.slice(0, 4) || ""}
                   </td>
 
-                  {/* Description Column */}
                   <td style={cellStyle}>{renderAuditDetails(log)}</td>
                 </tr>
               );
