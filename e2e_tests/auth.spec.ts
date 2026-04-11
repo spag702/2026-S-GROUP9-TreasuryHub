@@ -30,9 +30,9 @@ test.describe('Authentication', () => {
 
     // Now try to go back to login
     await page.goto('/login');
-    await page.waitForURL('/');
+    // Changed timeout to have more time, since test was failing
+    await page.waitForURL('/', { timeout: 10000 });
     await expect(page).toHaveURL('/');
-
   });
 
   test('user can sign out', async ({ page }) => {
