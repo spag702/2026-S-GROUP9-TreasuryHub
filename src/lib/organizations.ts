@@ -55,13 +55,16 @@ export function normalizeMemberEmail(email: string) {
 
 // Gets the logged-in user and also checks whether they belong to this org.
 export async function getCurrentUserWithOrganizationMembership(orgId: string) {
+  //Creates Supabase client
   const supabase = await createClient();
 
+  //Authenticates the current user
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
+  //Error if authentication fails
   if (userError) {
     throw new Error(userError.message);
   }
@@ -74,6 +77,7 @@ export async function getCurrentUserWithOrganizationMembership(orgId: string) {
     };
   }
 
+  //Checks if member is part of the organization
   const membershipResult = await supabase
     .from("org_members")
     .select("user_id, org_id, role")
@@ -81,16 +85,18 @@ export async function getCurrentUserWithOrganizationMembership(orgId: string) {
     .eq("org_id", orgId)
     .maybeSingle();
 
+  //Error if member organization check fails
   if (membershipResult.error) {
     throw new Error(membershipResult.error.message);
   }
 
+  //Returns user and what their organizations are
   return {
     user,
     membership: membershipResult.data as OrganizationMembership | null,
   };
 }
-
+ 
 // Small helper for getting the org name/header info.
 export async function getOrganizationById(orgId: string) {
   const supabase = await createClient();
