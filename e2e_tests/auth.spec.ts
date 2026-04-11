@@ -14,7 +14,7 @@ test.describe('Authentication', () => {
     await page.getByPlaceholder('Email').fill('test@auth.playwright');
     await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('/');
+    await page.waitForURL('/', { timeout: 10000 });
     await expect(page).toHaveURL('/');
 
   });
@@ -25,7 +25,7 @@ test.describe('Authentication', () => {
     await page.getByPlaceholder('Email').fill('test@auth.playwright');
     await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('/');
+    await page.waitForURL('/', { timeout: 10000 });
     await expect(page).toHaveURL('/');
 
     // Now try to go back to login
@@ -40,7 +40,7 @@ test.describe('Authentication', () => {
     await page.getByPlaceholder('Email').fill('test@auth.playwright');
     await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('/');
+    await page.waitForURL('/', { timeout: 10000 });
     await expect(page).toHaveURL('/');
 
     await page.getByRole('button', { name: /Sign Out/i }).click();
