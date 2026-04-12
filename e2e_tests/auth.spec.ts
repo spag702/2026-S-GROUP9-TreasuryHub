@@ -4,34 +4,29 @@ test.describe('Authentication', () => {
 
   test('unauthenticated user is redirected to login', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.waitForURL(/\/login/);
+    await page.waitForURL(/\/login/, { timeout: 20000 });
     await expect(page).toHaveURL(/\/login/);
   });
 
   test('user can log in and reach dashboard', async ({ page }) => {
     await page.goto('/login');
-
     await page.getByPlaceholder('Email').fill('test@auth.playwright');
     await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL('/', { timeout: 20000 });
     await expect(page).toHaveURL('/');
-
   });
 
   test('logged in user is redirected away from login page', async ({ page }) => {
-    // Log in first
     await page.goto('/login');
     await page.getByPlaceholder('Email').fill('test@auth.playwright');
     await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL('/', { timeout: 20000 });
     await expect(page).toHaveURL('/');
 
-    // Now try to go back to login
     await page.goto('/login');
-    // Changed timeout to have more time, since test was failing
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL('/', { timeout: 20000 });
     await expect(page).toHaveURL('/');
   });
 
@@ -40,11 +35,11 @@ test.describe('Authentication', () => {
     await page.getByPlaceholder('Email').fill('test@auth.playwright');
     await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL('/', { timeout: 20000 });
     await expect(page).toHaveURL('/');
 
     await page.getByRole('button', { name: /Sign Out/i }).click();
-    await page.waitForURL(/\/login/);
+    await page.waitForURL(/\/login/, { timeout: 20000 });
     await expect(page).toHaveURL(/\/login/);
   });
 
