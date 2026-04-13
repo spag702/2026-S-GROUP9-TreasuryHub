@@ -2,13 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { canViewAudit, getAuditVisibilityScope } from "@/lib/roles";
 import { AuditLogType } from "./lib/data";
 import { formatAction } from "./lib/util";
-import { renderAuditDetails, cellStyle, headerStyle, containerStyle, tableStyle} from "./lib/render";
+import {
+  renderAuditDetails,
+  cellStyle,
+  headerStyle,
+  containerStyle,
+  tableStyle,
+} from "./lib/render";
 import BackButton from "@/components/BackButton";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import { useSearchParams } from "next/navigation";
-
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AuditPage
@@ -44,6 +50,8 @@ export default function AuditPage(){
     // Fetch the current user's ID, organizations and role
       useEffect(() => {
         const fetchUserandOrgs = async () => {
+
+            // Fetch the user id
             const { data: { user }, error: userError } = await supabase.auth.getUser();
 
             if (userError) {
