@@ -4,6 +4,7 @@ import { useDebugValue, useEffect, useState } from "react"
 import { addQuote, getQuotes, acceptQuote, deleteQuote } from "./actions"
 import BackButton from "@/components/BackButton"
 import { Skeleton } from "@/components/Skeleton"
+import { useSearchParams } from "next/navigation"
 
 // The Treasurer/Admin can view and review uploaded quotes for products 
 // or services for a certain event with an established budget. They can 
@@ -18,6 +19,10 @@ export default function QuotesPage() {
         amount: number
         accepted: boolean
     }[]>([])
+
+    // Grab the organization ID from the search parameters
+    const searchParams = useSearchParams();
+    const orgID = searchParams.get('orgId');
 
     const [vendor, setVendor] = useState("")
     const [memo, setMemo] = useState("")
@@ -52,8 +57,8 @@ export default function QuotesPage() {
     }, [])
 
     async function handleAddQuote() {
-        if (!vendor || !memo || !amount) return
-        const result = await addQuote(vendor, memo, parseFloat(amount));
+        if (!vendor || !memo || !amount || !orgID) return
+        const result = await addQuote(vendor, memo, parseFloat(amount), orgID);
 
         if (result?.error) {
             setError(result.error);

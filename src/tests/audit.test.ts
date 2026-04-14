@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getDiff, formatAction } from '../app/audit/lib/util'
+import { formatDisplayRole } from '@/app/audit/lib/render'
 
 // ─────────────────────────────────────────────
 // getDiff
@@ -63,6 +64,14 @@ describe('getDiff', () => {
 
     it('handles both null gracefully', () => {
         expect(getDiff(null, null)).toEqual([])
+    })
+
+    it('returns Unknown Role when null', () => {
+        expect(formatDisplayRole(null)).toBe("Unknown Role");
+    })
+
+    it('returns the correct display role', () => {
+        expect(formatDisplayRole("admin")).toBe("admin");
     })
 })
 

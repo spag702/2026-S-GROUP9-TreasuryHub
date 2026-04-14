@@ -7,14 +7,15 @@ import { AuditLogType } from "./lib/data";
 import { formatAction } from "./lib/util";
 import {
   renderAuditDetails,
+  formatDisplayRole,
   cellStyle,
   headerStyle,
   containerStyle,
   tableStyle,
 } from "./lib/render";
 import BackButton from "@/components/BackButton";
-import OrgSwitcher from "@/components/OrgSwitcher";
 import { useSearchParams } from "next/navigation";
+import OrgDropDown from "@/components/OrgDropDown";
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AuditPage
@@ -119,7 +120,12 @@ export default function AuditPage(){
 
             console.log("Role:", role);
 
-            if (role == 'treasurer') {
+            const auditVisibilityScope = getAuditVisibilityScope(role);
+
+            console.log(auditVisibilityScope);
+
+
+            if (auditVisibilityScope === 'financial_only') {
                 console.log("Filtering for financial logs only");
                 console.log("AuditLogType.FINANCIAL:", AuditLogType.FINANCIAL);
                 query = query.eq("type", AuditLogType.FINANCIAL);
@@ -157,7 +163,7 @@ export default function AuditPage(){
                 <h2 style={{marginBottom: "10px"}}>Recent Audit</h2>
                  {organizations.length > 1 && orgId && (
                             <div className="mb-6">
-                                <OrgSwitcher
+                                <OrgDropDown
                                     organizations={organizations}
                                     currentOrgId={orgId}
                                     basePath="/audit"
@@ -180,7 +186,7 @@ export default function AuditPage(){
             </div>
             {organizations.length > 1 && orgId && (
                             <div className="mb-6">
-                                <OrgSwitcher
+                                <OrgDropDown
                                     organizations={organizations}
                                     currentOrgId={orgId}
                                     basePath="/audit"
@@ -218,7 +224,7 @@ export default function AuditPage(){
 
                                 {/* Role Column */}
                                 <td style={cellStyle}>
-                                    {log.display_role || "Unknown Role"}
+                                    {formatDisplayRole(log.display_role)}
                                 </td>
 
                                 {/* Timestamp Column */}

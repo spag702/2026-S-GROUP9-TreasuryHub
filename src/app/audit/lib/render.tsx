@@ -40,6 +40,10 @@ export function renderAuditDetails(log: any) {
         ));
 }
 
+export function formatDisplayRole(role?: string | null) {
+    return role || "Unknown Role";
+}
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Table Styles
