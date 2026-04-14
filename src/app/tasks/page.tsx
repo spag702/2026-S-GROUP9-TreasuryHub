@@ -70,11 +70,6 @@ function hasOfficerAccess(role: string) {
 export default function TasksPage() {
   // Grab the orgId 
   const orgId = useSearchParams().get('orgId');
-
-  // Ensure the orgId was grabbed
-  if (!orgId) return;
-
-
   // stores all tasks from Supabase
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -91,6 +86,12 @@ export default function TasksPage() {
   // stores real roles and members from the database
   const [existingRoles, setExistingRoles] = useState<string[]>([]);
   const [existingMembers, setExistingMembers] = useState<string[]>([]);
+
+  // Checks if the orgId was fetched
+  if(!orgId) {
+    console.error("No Organization ID was found.");
+    return;
+  }
 
   /*
     This loads tasks from Supabase when the page first opens.
