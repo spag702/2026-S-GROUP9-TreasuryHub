@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { canViewAudit, getAuditVisibilityScope } from "@/lib/roles";
 import { AuditLogType } from "./lib/data";
@@ -16,6 +16,7 @@ import {
 import BackButton from "@/components/BackButton";
 import { useSearchParams } from "next/navigation";
 import OrgDropDown from "@/components/OrgDropDown";
+import { Skeleton } from '@/components/Skeleton'
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // AuditPage
@@ -31,9 +32,9 @@ type OrgOption = {
     role: string;
 }
 
-export default function AuditPage(){
-    const seachParams = useSearchParams();
-    const orgIdFromParams = seachParams.get("orgId");
+function AuditPageContent(){
+    const searchParams = useSearchParams();
+    const orgIdFromParams = searchParams.get("orgId");
 
 
     const [userId, setUserId] = useState<string | null>(null);
@@ -41,9 +42,8 @@ export default function AuditPage(){
     const [organizations, setOrganizations] = useState<OrgOption[]>([]);
     const [logs, setLogs] = useState<any[]>([]);
     const [role, setRole] = useState<string | null>(null);
-    const [orgError, setOrgError] = useState<string | null>(null)
-    const [loading, setLoading] = useState(true)
-    const canViewAudit = role === "treasurer" || role === "admin";
+    const [orgError, setOrgError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const supabase = createClient();
 
@@ -157,7 +157,7 @@ export default function AuditPage(){
     }
     
 
-    if (!canViewAudit){
+    if (!canViewAudit(role)){
         return (
             <div style={{padding: "20px"}}>
                 <h2 style={{marginBottom: "10px"}}>Recent Audit</h2>
@@ -255,4 +255,40 @@ export default function AuditPage(){
         </div>
     );
 
+}
+
+
+export default function AuditPage() {
+        return (
+            <Suspense
+                fallback={
+                    <div className="p-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <Skeleton width={64} height={28} />
+                            <Skeleton width={112} height={38} rounded="sm" />
+                        </div>
+                        <div className="flex flex-wrap gap-4 mb-6">
+                            <div className="flex gap-2">
+                                <Skeleton width={56} height={38} rounded="sm" />
+                                <Skeleton width={72} height={38} rounded="sm" />
+                                <Skeleton width={88} height={38} rounded="sm" />
+                            </div>
+                        </div>
+                        <ul className="divide-y border rounded-lg">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <li key={i} className="flex items-center justify-between p-4">
+                                    <div className="flex flex-col gap-2">
+                                        <Skeleton width={200} height={16} />
+                                        <Skeleton width={140} height={13} />
+                                    </div>
+                                    <Skeleton width={36} height={14} />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                }
+            >
+                <AuditPageContent />
+            </Suspense>
+        )
 }
