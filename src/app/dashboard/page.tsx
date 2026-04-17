@@ -94,10 +94,10 @@ function LinkCard({
   );
 }
 
-function QuotesCard() {
+function QuotesCard({ orgId }: {orgId:string}) {
   return (
     <Link
-      href="/quotes"
+      href={`/quotes?orgId=${orgId}`}
       className="
         group
         rounded-2xl
@@ -397,7 +397,7 @@ export default async function DashboardPage({
                 description="Review recent audit activity →"
               />
 
-              <QuotesCard />
+              <QuotesCard orgId = {data.orgId} />
 
               {canAccessFiles && (
                 <LinkCard

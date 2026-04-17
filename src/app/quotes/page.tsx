@@ -1,16 +1,17 @@
 "use client"
 
-import { useDebugValue, useEffect, useState } from "react"
+import { useDebugValue, useEffect, useState, Suspense } from "react"
 import { addQuote, getQuotes, acceptQuote, deleteQuote } from "./actions"
 import BackButton from "@/components/BackButton"
 import { Skeleton } from "@/components/Skeleton"
+import { useSearchParams } from "next/navigation"
 
 // The Treasurer/Admin can view and review uploaded quotes for products 
 // or services for a certain event with an established budget. They can 
 // evaluate available options and publish the selected quote to propose 
 // during budget planning and purchasing decisions.  
 
-export default function QuotesPage() {
+function QuotesPageContent() {
     const [quotes, setQuotes] = useState<{
         quotes_id: number
         vendor: string
@@ -18,6 +19,10 @@ export default function QuotesPage() {
         amount: number
         accepted: boolean
     }[]>([])
+
+    // Grab the organization ID from the search parameters
+    const searchParams = useSearchParams();
+    const orgID = searchParams.get('orgId');
 
     const [vendor, setVendor] = useState("")
     const [memo, setMemo] = useState("")
@@ -52,8 +57,8 @@ export default function QuotesPage() {
     }, [])
 
     async function handleAddQuote() {
-        if (!vendor || !memo || !amount) return
-        const result = await addQuote(vendor, memo, parseFloat(amount));
+        if (!vendor || !memo || !amount || !orgID) return
+        const result = await addQuote(vendor, memo, parseFloat(amount), orgID);
 
         if (result?.error) {
             setError(result.error);
@@ -192,4 +197,40 @@ export default function QuotesPage() {
             )}
         </div>
     )
+}
+
+// Suspense boundary for useSearchParams()
+export default function QuotesPage() {
+        return (
+            <Suspense
+                fallback={
+                    <div className="p-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <Skeleton width={64} height={28} />
+                            <Skeleton width={112} height={38} rounded="sm" />
+                        </div>
+                        <div className="flex flex-wrap gap-4 mb-6">
+                            <div className="flex gap-2">
+                                <Skeleton width={56} height={38} rounded="sm" />
+                                <Skeleton width={72} height={38} rounded="sm" />
+                                <Skeleton width={88} height={38} rounded="sm" />
+                            </div>
+                        </div>
+                        <ul className="divide-y border rounded-lg">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <li key={i} className="flex items-center justify-between p-4">
+                                    <div className="flex flex-col gap-2">
+                                        <Skeleton width={200} height={16} />
+                                        <Skeleton width={140} height={13} />
+                                    </div>
+                                    <Skeleton width={36} height={14} />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                }
+            >
+                <QuotesPageContent />
+            </Suspense>
+        )
 }

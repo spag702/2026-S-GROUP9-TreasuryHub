@@ -138,20 +138,44 @@ export async function addOrganizationMember(orgId: string, formData: FormData) {
 
   if (userError) {
     console.error(
-      "Failed to fetch user data for audit log:",
+      "Failed to fetch new user data for audit log:",
       userError.message
+    );
+  }
+
+  // Fetch current user ID
+  const { data: userID  } = await supabase.auth.getUser()
+
+   if (!userID.user) {
+    console.error("Failed to fetch current user ID.");
+    return;
+  }
+
+  // Fetch the current user's role
+  const { data: roleData, error: roleError } = await supabase
+  .from('org_members')
+  .select('role')
+  .eq('user_id', userID.user.id)
+  .eq('org_id', orgId)
+  .maybeSingle()
+
+  if (roleError) {
+    console.error(
+      "Failed to fetch user role for audit log:",
+      roleError.message
     );
   }
 
   // Log the new member addition in the audit log
   await logAuditEntry({
     orgId: orgId,
-    userId: user.user_id,
+    userId: userID.user.id,
     action: "CREATE",
     entity_type: "organization_member",
     entity_id: user.user_id,
     after_data: { "Organization": orgData?.org_name, "User": userData?.display_name, "User ID": user.user_id, "Role": role },
     type: AuditLogType.ACCOUNT,
+    display_role: roleData?.role,
   });
 
   // Refresh the page data after a successful insert.
@@ -276,6 +300,7 @@ export async function updateOrganizationMemberRole(
         before_data: {  "User": userData?.display_name, "User ID": targetUserId, "Role": existingMembershipResult.data.role },
         after_data: { "User": userData?.display_name, "User ID": targetUserId, "Role": nextRole },
         type: AuditLogType.ACCOUNT,
+        display_role: currentMembership.role,
     });
 
     revalidatePath(`/organizations/${orgId}/members`);
@@ -372,6 +397,7 @@ export async function removeOrganizationMember(
     entity_id: targetUserId,
     before_data: { "User": userData?.display_name, "User ID": targetUserId },
     type: AuditLogType.ACCOUNT,
+    display_role: currentMembership.role,
   });
 
   revalidatePath(`/organizations/${orgId}/members`);

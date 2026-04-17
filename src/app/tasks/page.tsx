@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import {
   getTasks,
   addTaskAction,
@@ -9,6 +9,7 @@ import {
   getTaskAssignmentOptions,
 } from "./actions";
 import BackButton from "@/components/BackButton";
+import { useSearchParams } from "next/navigation";
 import Skeleton from "@/components/Skeleton";
 
 /*
@@ -66,7 +67,9 @@ function hasOfficerAccess(role: string) {
   TODO(issue #59 follow-up): tasks still use placeholder demo roles and are not wired into src/lib/roles.ts yet.
 */
 
-export default function TasksPage() {
+function TasksPageContent() {
+  // Grab the orgId 
+  const orgId = useSearchParams().get('orgId');
   // stores all tasks from Supabase
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -89,6 +92,8 @@ export default function TasksPage() {
   */
   useEffect(() => {
     const fetchTasks = async () => {
+      if(!orgId) return;
+
       const result = await getTasks();
 
       if (result.error) {
@@ -125,7 +130,7 @@ export default function TasksPage() {
     };
 
     fetchTasks();
-  }, []);
+  }, [orgId]);
 
   /*
     FUNCTION: isValidFutureDate
@@ -191,15 +196,21 @@ export default function TasksPage() {
       return;
     }
 
+    if(!orgId) {
+      alert("Organization ID was not found.")
+      return;
+    }
+
     const result = await addTaskAction({
       title,
       taskType,
       assignType,
       assignedTo,
       dueDate,
+      orgId,
     });
 
-    if (result.error) {
+    if (result?.error) {
       alert(result.error);
       return;
     }
@@ -221,6 +232,11 @@ export default function TasksPage() {
   const editTask = async (id: number) => {
     if (!hasOfficerAccess(currentUserRole)) {
       alert("Only officer-level users or above can edit tasks.");
+      return;
+    }
+
+    if (!orgId) {
+      alert("Organization ID was not found.");
       return;
     }
 
@@ -292,6 +308,7 @@ export default function TasksPage() {
       assignType: newAssignTypeInput,
       assignedTo: newAssignedTo,
       dueDate: newDueDate || "",
+      orgId,
     });
 
     if (result.error) {
@@ -312,8 +329,12 @@ export default function TasksPage() {
       alert("Only officer-level users or above can delete tasks.");
       return;
     }
+    if (!orgId) {
+      alert("Organization ID was not found.");
+      return;
+    }
 
-    const result = await deleteTaskAction(id);
+    const result = await deleteTaskAction(id, orgId);
 
     if (result.error) {
       alert(result.error);
@@ -553,4 +574,41 @@ export default function TasksPage() {
       </ul>
     </div>
   );
+}
+
+
+// Suspense boundary for useSearchParams()
+export default function TasksPage() {
+        return (
+            <Suspense
+                fallback={
+                    <div className="p-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <Skeleton width={64} height={28} />
+                            <Skeleton width={112} height={38} rounded="sm" />
+                        </div>
+                        <div className="flex flex-wrap gap-4 mb-6">
+                            <div className="flex gap-2">
+                                <Skeleton width={56} height={38} rounded="sm" />
+                                <Skeleton width={72} height={38} rounded="sm" />
+                                <Skeleton width={88} height={38} rounded="sm" />
+                            </div>
+                        </div>
+                        <ul className="divide-y border rounded-lg">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <li key={i} className="flex items-center justify-between p-4">
+                                    <div className="flex flex-col gap-2">
+                                        <Skeleton width={200} height={16} />
+                                        <Skeleton width={140} height={13} />
+                                    </div>
+                                    <Skeleton width={36} height={14} />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                }
+            >
+                <TasksPageContent />
+            </Suspense>
+        )
 }
