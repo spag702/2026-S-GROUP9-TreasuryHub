@@ -67,7 +67,7 @@ export default async function OrgSettingsPage({
           </div>
 
           <Link
-            href={`/dashboard?orgId=${orgId}`}
+            href={`/`}
             className="
               rounded-xl border border-white/[0.2] bg-white/[0.05]
               px-4 py-2 text-sm font-medium text-white transition
