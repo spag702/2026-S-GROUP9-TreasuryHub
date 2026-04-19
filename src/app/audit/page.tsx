@@ -162,15 +162,17 @@ function AuditPageContent(){
             <div style={{padding: "20px"}}>
                 <h2 style={{marginBottom: "10px"}}>Recent Audit</h2>
                  {organizations.length > 1 && orgId && (
-                            <div className="mb-6">
+                            <div className="mb-6" style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
                                 <OrgDropDown
                                     organizations={organizations}
                                     currentOrgId={orgId}
                                     basePath="/audit"
                                 />
+                                <BackButton></BackButton>
                             </div>
                         )}
                 <p>You do not have permission to view audit logs.</p>
+                <BackButton></BackButton>
             </div>
         );
     }

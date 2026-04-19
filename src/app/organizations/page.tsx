@@ -95,12 +95,14 @@ export default async function Organizations({
               Pick an organization to open its members page.
             </p>
           </div>
-
-          <Link href="/organizations/new">
-            <button className="rounded border border-white p-2 text-white">
-              Create New Organization
-            </button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/organizations/new">
+              <button className="rounded border border-white p-2 text-white">
+                Create New Organization
+              </button>
+            </Link>
+            <BackButton></BackButton>
+          </div>
         </div>
 
         {/* This lets redirects from the protected members page show an actual message */}
@@ -144,7 +146,7 @@ export default async function Organizations({
                 </div>
               </Link>
             ))}
-            <BackButton></BackButton>
+            
           </div>
         )}
       </div>
