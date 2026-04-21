@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateOrganizationLogo } from "./actions";
 
@@ -24,6 +25,19 @@ export default async function OrgSettingsPage({
         <p>You must be signed in.</p>
       </main>
     );
+  }
+
+  const { data: membership } = await supabase
+  .from("org_members")
+  .select("role")
+  .eq("org_id", orgId)
+  .eq("user_id", user.id)
+  .single();
+
+  const allowedRoles = ["treasurer", "advisor"];
+
+  if (!membership || !allowedRoles.includes(membership.role.toLowerCase())) {
+    redirect(`/?orgId=${orgId}`);
   }
 
   const { data: organization, error } = await supabase

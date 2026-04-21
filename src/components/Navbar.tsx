@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import OrgDropDown from "@/components/OrgDropDown";
@@ -11,21 +12,27 @@ type NavbarProps = {
   }[];
   currentOrgId: string;
   currentOrgName: string;
+  currentUserRole: string;
   basePath: string;
   pageTitle: string;
   logoSrc?: string  | null;
   logoAlt?: string;
 };
 
+
 export default function Navbar({
   organizations,
   currentOrgId,
   currentOrgName,
+  currentUserRole,
   basePath,
   pageTitle,
   logoSrc,
   logoAlt = "TreasuryHub logo",
 }: NavbarProps) {
+  const canEditLogo = ["treasurer", "advisor"].includes(
+    currentUserRole.toLowerCase()
+  );
   return (
     <nav
       className="
@@ -38,12 +45,40 @@ export default function Navbar({
     >
       <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-4">
-          <Link
-            href={`/organizations/${currentOrgId}/settings`}
-            className="group"
-            title={`Edit ${currentOrgName} logo`}
-          >
-            <div
+          {canEditLogo ? (
+            <Link
+              href={`/organizations/${currentOrgId}/settings`}
+              className="group"
+              title={`Edit ${currentOrgName} logo`}
+            >
+              <div
+                className="
+                  flex h-12 w-12 items-center justify-center overflow-hidden
+                  rounded-xl border border-white/[0.12]
+                  bg-white/[0.03] transition
+                  hover:border-white/[0.25] hover:bg-white/[0.06]
+                "
+              >
+                {logoSrc ? (
+                  <Image
+                    src={logoSrc}
+                    alt={logoAlt}
+                    width={56}
+                    height={56}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <span className="text-sm font-semibold text-white">TH</span>
+                )}
+              </div>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                window.alert("Only treasurers and advisors can change the organization logo.")
+              }
+              title="You do not have permission to edit the logo"
               className="
                 flex h-12 w-12 items-center justify-center overflow-hidden
                 rounded-xl border border-white/[0.12]
@@ -62,8 +97,8 @@ export default function Navbar({
               ) : (
                 <span className="text-sm font-semibold text-white">TH</span>
               )}
-            </div>
-          </Link>
+            </button>
+          )}
 
           <div className="flex flex-col">
             <div className="flex items-center gap-2">

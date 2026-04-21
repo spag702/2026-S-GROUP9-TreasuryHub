@@ -29,7 +29,8 @@ export async function updateOrganizationLogo(
     .eq("user_id", user.id)
     .single();
 
-  const allowedRoles = ["treasurer", "advisor", "executive", "admin"];
+  const allowedRoles = ["treasurer", "advisor"];
+
   if (!membership || !allowedRoles.includes(membership.role.toLowerCase())) {
     throw new Error("No permission");
   }
@@ -38,6 +39,10 @@ export async function updateOrganizationLogo(
 
   if (!file || file.size === 0) {
     throw new Error("No file");
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("File too large (max 5MB)");
   }
 
   const fileExt = file.name.split(".").pop()?.toLowerCase() ?? "png";
@@ -54,18 +59,18 @@ export async function updateOrganizationLogo(
     throw new Error(uploadError.message);
   }
 
-  // STORE PATH ONLY
   const { error: updateError } = await supabase
     .from("organizations")
-    .update({ logo_path: filePath }) // <-- THIS is key
+    .update({ logo_path: filePath })
     .eq("org_id", orgId);
 
   if (updateError) {
     throw new Error(updateError.message);
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/");
   revalidatePath(`/organizations/${orgId}/settings`);
+  revalidatePath(`/dashboard`);
 
-  redirect(`/dashboard?orgId=${orgId}`);
+  redirect(`/?orgId=${orgId}`);
 }

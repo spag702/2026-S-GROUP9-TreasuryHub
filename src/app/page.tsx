@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getDashboardData } from "@/lib/supabase/dashboard";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import { canExportTransactions, canViewFiles } from "@/lib/roles";
@@ -365,12 +367,13 @@ export default async function DashboardPage({
     <main className="min-h-screen bg-black text-white">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
       <Navbar
+        currentUserRole={data.role}
         organizations={data.organizations}
         currentOrgId={data.orgId}
         currentOrgName={
           data.organizations.find(org => org.org_id === data.orgId)?.org_name || "Unknown Org"
         }
-        basePath="/dashboard"
+        basePath="/"
         logoSrc={currentOrg?.logo_url || null}
         pageTitle="Dashboard"
       />
