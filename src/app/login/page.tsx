@@ -41,7 +41,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border border-white rounded p-2 text-white bg-black-600"
+                className="border border-gray-300 rounded p-2 text-gray-900 bg-gray-100 focus:border-blue-500 focus:outline-none dark:border-white/[0.2] dark:bg-white/[0.05] dark:text-white"//changed to make it visible for light mode - prabh
                 placeholder="Email"
                 />
 
@@ -49,11 +49,12 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="border border-white rounded p-2 text-white bg-black-600"
+                className="border border-gray-300 rounded p-2 text-gray-900 bg-gray-100 focus:border-blue-500 focus:outline-none dark:border-white/[0.2] dark:bg-white/[0.05] dark:text-white" //changed to make it visible for light mode - prabh
                 placeholder="Password"
             />
-
-            <button onClick={handleSubmit} className="border border-white rounded p-2 text-white hover:bg-white/[0.1]">
+             
+            <button onClick={handleSubmit} className="border border-gray-300 rounded p-2 text-gray-900 hover:bg-gray-100 dark:border-white/[0.2] dark:text-white dark:hover:bg-white/[0.1]" //changed to make it visible for light mode - prabh
+            > 
                 Login
             </button>
             </div>
