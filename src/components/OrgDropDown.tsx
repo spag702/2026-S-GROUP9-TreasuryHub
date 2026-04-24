@@ -26,7 +26,7 @@ export default function OrgDropDown({ organizations, currentOrgId, basePath }: P
         onChange={(e) => {
           const selectedOrgId = e.target.value
           if (!selectedOrgId) return
-
+          const path = basePath === "/" ? "" : basePath;
           e.target.value = "" // reset to "Change Org"
           router.push(`${basePath}?orgId=${selectedOrgId}`)
         }}
