@@ -88,7 +88,7 @@ export default async function Organizations({
     }
   }
 
-  return (
+  return ( //changed the create new organizations button to make it visible in the light mode
     <main className="min-h-screen p-6">
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="flex items-center justify-between">
@@ -98,9 +98,9 @@ export default async function Organizations({
               Pick an organization to open its members page.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2"> 
             <Link href="/organizations/new">
-              <button className="rounded border border-white p-2 text-white">
+              <button className="rounded border border-gray-300 p-2 text-gray-900 dark:border-white/[0.2] dark:text-white">  
                 Create New Organization
               </button>
             </Link>
