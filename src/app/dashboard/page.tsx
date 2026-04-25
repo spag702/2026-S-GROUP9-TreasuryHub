@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getDashboardData } from "@/lib/supabase/dashboard";
 import ExportCSVButton from "@/components/ExportCSVButton";
-import { canExportTransactions, canViewFiles } from "@/lib/roles";
+import { canExportTransactions, canViewAudit, canViewFiles } from "@/lib/roles";
 import Navbar from "@/components/Navbar";
 
 
@@ -354,6 +354,7 @@ export default async function DashboardPage({
   }
 
   const canAccessFiles = canViewFiles(data.role);
+  const canAccessAudit = canViewAudit(data.role);
   const canExport = canExportTransactions(data.role);
 
   return (
@@ -390,12 +391,14 @@ export default async function DashboardPage({
                 value={data.summary.transactionCount}
               />
 
-              <LinkCard
-                href={`/audit?orgId=${data.orgId}`}
-                label="Audit"
-                title={String(data.summary.auditCount)}
-                description="Review recent audit activity →"
-              />
+              {canAccessAudit && (
+                <LinkCard
+                  href={`/audit?orgId=${data.orgId}`}
+                  label="Audit"
+                  title={String(data.summary.auditCount)}
+                  description="Review recent audit activity →"
+                />
+              )}
 
               <QuotesCard orgId = {data.orgId} />
 
