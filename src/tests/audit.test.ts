@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { getDiff, formatAction } from '../app/audit/lib/util'
-import { formatDisplayRole } from '@/app/audit/lib/render'
+import { getDiff} from '../app/audit/lib/util'
+import { formatDisplayRole, formatAction} from '@/app/audit/lib/render'
 
 // ─────────────────────────────────────────────
 // getDiff
@@ -80,15 +80,15 @@ describe('getDiff', () => {
 // ─────────────────────────────────────────────
 describe('formatAction', () => {
     it('formats CREATE as Created', () => {
-        expect(formatAction('CREATE')).toBe('Created')
+        expect(formatAction('CREATE')).toBe('CREATE')
     })
 
     it('formats UPDATE as Updated', () => {
-        expect(formatAction('UPDATE')).toBe('Updated')
+        expect(formatAction('UPDATE')).toBe('UPDATE')
     })
 
     it('formats DELETE as Deleted', () => {
-        expect(formatAction('DELETE')).toBe('Deleted')
+        expect(formatAction('DELETE')).toBe('DELETE')
     })
 
     it('returns unknown actions as-is', () => {

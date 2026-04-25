@@ -72,7 +72,7 @@ export const formatAction = (action: string) => {
         case "DELETE":
             return <span style={{color: "#f87171"}}>{action}</span>;
         default:
-            return "Unknown Action";
+            return "UNKOWNN";
     }
 };
 
