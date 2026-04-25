@@ -2,6 +2,7 @@ import { stat } from "fs";
 import { getDiff } from "./util";
 import { spawn } from "child_process";
 import { ROLE_LABELS } from "@/lib/roles";
+import { Span } from "next/dist/trace";
 
 // renderDetails
 // Renders the details of an audit log entry based on the action type
@@ -72,7 +73,7 @@ export const formatAction = (action: string) => {
         case "DELETE":
             return <span style={{color: "#f87171"}}>{action}</span>;
         default:
-            return "UNKOWNN";
+            return <span>UNKNOWN</span>;
     }
 };
 
