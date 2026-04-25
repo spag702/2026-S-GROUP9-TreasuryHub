@@ -60,9 +60,12 @@ export default function LoginPage() {
                     Login
                 </button>
             </div>
-            <div className="flex items-center justify-center mb-3 mt-5">
+            <div className="flex flex-col items-center justify-center mb-3 mt-5 gap-2">
                 <a href="/register" className="text-sm text-blue-500 hover:underline">
                     Don&apos;t have an account? Register
+                </a>
+                <a href="/forgot-password" className="text-sm text-blue-500 hover:underline">
+                    Forgot your password?
                 </a>
             </div>
             <div className="flex items-center justify-center mb-3">
