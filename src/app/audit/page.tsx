@@ -4,14 +4,15 @@ import React, { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { canViewAudit, getAuditVisibilityScope } from "@/lib/roles";
 import { AuditLogType } from "./lib/data";
-import { formatAction } from "./lib/util";
+import { formatAction } from "./lib/render";
 import {
-    renderAuditDetails,
-    formatDisplayRole,
-    cellStyle,
-    headerStyle,
-    containerStyle,
-    tableStyle,
+  renderAuditDetails,
+  formatDisplayRole,
+  cellStyle,
+  headerStyle,
+  containerStyle,
+  tableStyle,
+  formatEntity,
 } from "./lib/render";
 import BackButton from "@/components/BackButton";
 import { useSearchParams } from "next/navigation";
@@ -216,43 +217,43 @@ function AuditPageContent() {
                     </thead>
 
                     <tbody>
-                        {logs.map((log) => {
-                            return (
-                                <tr key={log.audit_id}>
+                    {logs.map((log) => {
+                        return (
+                            <tr key={log.audit_id}>
 
-                                    {/* User Column */}
-                                    <td style={cellStyle}>
-                                        {log.users?.display_name || "Unknown User"}
-                                    </td>
+                                {/* User Column */}
+                                <td style={cellStyle}>
+                                    {log.users?.display_name || "Unknown User"}
+                                </td>
 
-                                    {/* Role Column */}
-                                    <td style={cellStyle}>
-                                        {formatDisplayRole(log.display_role)}
-                                    </td>
+                                {/* Role Column */}
+                                <td style={cellStyle}>
+                                    {formatDisplayRole(log.display_role)}
+                                </td>
 
-                                    {/* Timestamp Column */}
-                                    <td style={cellStyle}>
-                                        {new Date(log.created_at).toLocaleString()}
-                                    </td>
+                                {/* Timestamp Column */}
+                                <td style={cellStyle}>
+                                    {new Date(log.created_at).toLocaleString()}
+                                </td>
 
-                                    {/* Action Type Column */}
-                                    <td style={cellStyle}>
-                                        {formatAction(log.action)}
-                                    </td>
+                                {/* Action Type Column */}
+                                <td style={cellStyle}>
+                                    {formatAction(log.action)}
+                                </td>
 
-                                    {/* Item Column */}
-                                    <td style={cellStyle}>
-                                        {log.entity}-{log.entity_id?.slice(0, 4) || ""}
-                                    </td>
+                                {/* Item Column */}
+                                <td style={cellStyle}>
+                                    {formatEntity(log.entity, log.entity_id)}
+                                </td>
 
-                                    {/* Description Column */}
-                                    <td style={cellStyle}>
-                                        {renderAuditDetails(log)}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
+                                {/* Description Column */}
+                                <td style={cellStyle}>
+                                    {renderAuditDetails(log)}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
                 </table>
             </div>
         </div>
