@@ -1,5 +1,6 @@
 import { stat } from "fs";
 import { getDiff } from "./util";
+import { spawn } from "child_process";
 
 // renderDetails
 // Renders the details of an audit log entry based on the action type
@@ -54,6 +55,22 @@ export function renderAuditDetails(log: any) {
 export function formatDisplayRole(role?: string | null) {
     return role || "Unknown Role";
 }
+
+// formatAction
+// Converts action types to more user-friendly text
+export const formatAction = (action: string) => {
+    switch (action) {
+        case "CREATE":
+            return <span style={{color: "#4ade80"}}>{action}</span>;
+        case "UPDATE":
+            return <span style={{color: "#facc15"}}>{action}</span>;
+        case "DELETE":
+            return <span style={{color: "#f87171"}}>{action}</span>;
+        default:
+            return action;
+    }
+};
+
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

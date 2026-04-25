@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { canViewAudit, getAuditVisibilityScope } from "@/lib/roles";
 import { AuditLogType } from "./lib/data";
-import { formatAction } from "./lib/util";
+import { formatAction } from "./lib/render";
 import {
   renderAuditDetails,
   formatDisplayRole,
