@@ -67,9 +67,18 @@ function hasOfficerAccess(role: string) {
   TODO(issue #59 follow-up): tasks still use placeholder demo roles and are not wired into src/lib/roles.ts yet.
 */
 
+
+type SkeletonPulseProps = { className?: string; };
+function SkeletonPulse({ className = "" }: SkeletonPulseProps) {
+  return (
+    <div className={`animate-pulse rounded bg-white/[0.08] ${className}`} />
+  );
+}
+
 function TasksPageContent() {
   // Grab the orgId 
   const orgId = useSearchParams().get('orgId');
+
   // stores all tasks from Supabase
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -363,42 +372,42 @@ const handleEditSubmit = async () => {
           <BackButton></BackButton>
         
       </div>
-
+ 
       {/* alert banner for tasks that are getting close to due date */}
- {getNotifications(tasks).length > 0 && (
-  <div
-    style={{
-      background: "#e5e7eb",
-      color: "#111827",
-      padding: "10px",
-      border: "1px solid #9ca3af",
-      borderRadius: "6px",
-      marginBottom: "20px",
-    }}
-  >
-    <strong>Upcoming Task Alerts:</strong>
-    {getNotifications(tasks).map((task) => (
-      <div key={task.id} style={{ marginTop: "4px" }}>
-        {task.title} is due on {task.dueDate}
-      </div>
-    ))}
-  </div>
-)}
-
+      {getNotifications(tasks).length > 0 && (
+        <div
+          style={{
+            background: "#e5e7eb",
+            color: "#111827",
+            padding: "10px",
+            border: "1px solid #9ca3af",
+            borderRadius: "6px",
+            marginBottom: "20px",
+          }}
+        >
+          <strong>Upcoming Task Alerts:</strong>
+          {getNotifications(tasks).map((task) => (
+            <div key={task.id} style={{ marginTop: "4px" }}>
+              {task.title} is due on {task.dueDate}
+            </div>
+          ))}
+        </div>
+      )}
+ 
       {/* showing current user role just for demo/testing */}
       <p>
         <strong>Current User Role:</strong> {currentUserRole}
       </p>
-
-      {/* INPUT SECTION */}
+ 
+      {/* input */}
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "400px" }}>
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width={100} height={32} rounded="md" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-24" />
         </div>
       ) : (
       <div className="flex flex-col gap-3" style={{ maxWidth: "400px" }}>
@@ -466,13 +475,19 @@ const handleEditSubmit = async () => {
                 key={i}
                 className="mb-6 rounded-2xl border border-black/[0.08] bg-black/[0.02] p-6 dark:border-white/[0.12] dark:bg-white/[0.03]"
               >
-                <Skeleton width={180} height={16} />
-                <div style={{ marginTop: "6px" }}><Skeleton width={120} height={14} /></div>
-                <div style={{ marginTop: "6px" }}><Skeleton width={200} height={14} /></div>
-                <div style={{ marginTop: "6px" }}><Skeleton width={100} height={14} /></div>
+                <SkeletonPulse className="h-4 w-44" />
+                <div style={{ marginTop: "6px" }}>
+                  <SkeletonPulse className="h-3 w-28" />
+                </div>
+                <div style={{ marginTop: "6px" }}>
+                  <SkeletonPulse className="h-3 w-48" />
+                </div>
+                <div style={{ marginTop: "6px" }}>
+                  <SkeletonPulse className="h-3 w-24" />
+                </div>
                 <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                  <Skeleton width={58} height={26} rounded="sm" />
-                  <Skeleton width={42} height={26} rounded="sm" />
+                  <SkeletonPulse className="h-7 w-14 rounded" />
+                  <SkeletonPulse className="h-7 w-10 rounded" />
                 </div>
               </li>
             ))
