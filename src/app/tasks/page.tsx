@@ -45,10 +45,16 @@ type DatabaseTask = {
   notify_days_before?: number | null;
 };
 
-function TasksPageContent() {
-  // Grab the orgId from the URL.
-  const orgId = useSearchParams().get("orgId");
+type SkeletonPulseProps = { className?: string; };
+function SkeletonPulse({ className = "" }: SkeletonPulseProps) {
+  return (
+    <div className={`animate-pulse rounded bg-white/[0.08] ${className}`} />
+  );
+}
 
+function TasksPageContent() {
+  // Grab the orgId 
+  const orgId = useSearchParams().get('orgId');
   // stores all tasks from Supabase
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -387,9 +393,9 @@ function TasksPageContent() {
     <div style={{ padding: "20px" }}>
       <div className="mb-6 flex justify-between">
         <h1>Task List</h1>
-        <BackButton />
+        <BackButton></BackButton>
       </div>
-
+ 
       {/* alert banner for tasks that are getting close to due date */}
       {getNotifications(tasks).length > 0 && (
         <div
@@ -433,12 +439,12 @@ function TasksPageContent() {
             maxWidth: "400px",
           }}
         >
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width="100%" height={32} rounded="md" />
-          <Skeleton width={100} height={32} rounded="md" />
+         <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-full" />
+          <SkeletonPulse className="h-8 w-24" />
         </div>
       ) : (
         canManageCurrentTasks && (
@@ -514,8 +520,8 @@ function TasksPageContent() {
           </div>
         )
       )}
-
-      {/* TASK LIST */}
+ 
+      {/* task list */}
       <ul style={{ marginTop: "20px" }}>
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
@@ -528,19 +534,19 @@ function TasksPageContent() {
                   borderRadius: "8px",
                 }}
               >
-                <Skeleton width={180} height={16} />
+                <SkeletonPulse className="h-4 w-44" />
                 <div style={{ marginTop: "6px" }}>
-                  <Skeleton width={120} height={14} />
+                  <SkeletonPulse className="h-3 w-28" />
                 </div>
                 <div style={{ marginTop: "6px" }}>
-                  <Skeleton width={200} height={14} />
+                  <SkeletonPulse className="h-3 w-48" />
                 </div>
                 <div style={{ marginTop: "6px" }}>
-                  <Skeleton width={100} height={14} />
+                  <SkeletonPulse className="h-3 w-24" />
                 </div>
                 <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                  <Skeleton width={58} height={26} rounded="sm" />
-                  <Skeleton width={42} height={26} rounded="sm" />
+                  <SkeletonPulse className="h-7 w-14 rounded" />
+                  <SkeletonPulse className="h-7 w-10 rounded" />
                 </div>
               </li>
             ))
@@ -593,36 +599,36 @@ function TasksPageContent() {
 
 // Suspense boundary for useSearchParams()
 export default function TasksPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-4xl p-8">
-          <div className="mb-4 flex items-center justify-between">
-            <Skeleton width={64} height={28} />
-            <Skeleton width={112} height={38} rounded="sm" />
-          </div>
-          <div className="mb-6 flex flex-wrap gap-4">
-            <div className="flex gap-2">
-              <Skeleton width={56} height={38} rounded="sm" />
-              <Skeleton width={72} height={38} rounded="sm" />
-              <Skeleton width={88} height={38} rounded="sm" />
-            </div>
-          </div>
-          <ul className="divide-y rounded-lg border">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <li key={i} className="flex items-center justify-between p-4">
-                <div className="flex flex-col gap-2">
-                  <Skeleton width={200} height={16} />
-                  <Skeleton width={140} height={13} />
-                </div>
-                <Skeleton width={36} height={14} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      }
-    >
-      <TasksPageContent />
-    </Suspense>
-  );
+        return (
+            <Suspense
+                fallback={
+                    <div className="p-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <Skeleton width={64} height={28} />
+                            <Skeleton width={112} height={38} rounded="sm" />
+                        </div>
+                        <div className="flex flex-wrap gap-4 mb-6">
+                            <div className="flex gap-2">
+                                <Skeleton width={56} height={38} rounded="sm" />
+                                <Skeleton width={72} height={38} rounded="sm" />
+                                <Skeleton width={88} height={38} rounded="sm" />
+                            </div>
+                        </div>
+                        <ul className="divide-y border rounded-lg">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <li key={i} className="flex items-center justify-between p-4">
+                                    <div className="flex flex-col gap-2">
+                                        <Skeleton width={200} height={16} />
+                                        <Skeleton width={140} height={13} />
+                                    </div>
+                                    <Skeleton width={36} height={14} />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                }
+            >
+                <TasksPageContent />
+            </Suspense>
+        )
 }
