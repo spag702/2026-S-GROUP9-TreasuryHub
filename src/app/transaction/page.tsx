@@ -29,15 +29,29 @@ export default async function Page({
 
   if (!viewPrivilege) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
+    <main className="max-w-7xl mx-auto px-4 py-8 pb-16">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
         <h1 className={`text-2xl font-semibold ${textColors.primary} mb-1`}>
           Transactions
         </h1>
+            <OrgDropDownWrapper organizations={organizations} orgId={orgId} />
+            <p className={`${textColors.secondary}`}></p>
+          </div>
+          <div className="grid grid-flow-col grid-rows-1 gap-4">
+            {interactPrivelege && <CreateTransaction orgId={orgId} />}
+            <BackButton />
+          </div>
+        </div>
+      <div className="p-8 max-w-4xl mx-auto">
         <p className="text-red-400">
           You do not have permission to access transactions in this organization.
           Only treasurers, treasury team members, admins, executives, and advisors can access transactions.
         </p>
       </div>
+      </div>
+    </main>
     )
   }
   return (
