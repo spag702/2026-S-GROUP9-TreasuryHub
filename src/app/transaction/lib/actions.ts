@@ -3,32 +3,20 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { fetchOrgFromCurrentUser, fetchUserId } from "@/app/transaction/lib/data";
+import { fetchUserId } from "@/app/transaction/lib/data";
 import { z } from "zod";
 import { logAuditEntry } from "@/app/audit/lib/action";
 import { AuditLogType } from "@/app/audit/lib/data";
-// import { after, before } from "node:test";
+import { TransactionsSchema, type ActionState } from "@/app/transaction/lib/schemas";
 
-const TransactionSchema = z.object({
-  transaction_id: z.uuid(),
-  orgId: z.uuid(),
-  date: z.coerce.date().max(new Date(), "Date cannot be in future"),
-  description: z.string().nonempty("Please add description"),
-  category: z.string().nonempty("Please add category"),
-  type: z.enum(["income", "expense"]),
-  amount: z.coerce.number().positive("Amount must be greater than $0.00"),
-  notes: z.string().optional()
-})
+const CreateTransactionSchema = TransactionsSchema.omit({ transaction_id: true })
 
-const CreateTransactionSchema = TransactionSchema.omit({ transaction_id: true })
-
-export async function createTransaction(_prevState: any, formData: FormData) {
+export async function createTransaction(_prevState: ActionState, formData: FormData) : Promise<ActionState> {
   const supabase = await createClient();
-  const fetchOrgId = await fetchOrgFromCurrentUser();
   const userId = await fetchUserId();
 
   const result = CreateTransactionSchema.safeParse({
-    orgId: fetchOrgId,
+    org_id: formData.get("orgId"),
     type: formData.get("type"),
     description: formData.get("desc"),
     category: formData.get("category"),
@@ -43,7 +31,7 @@ export async function createTransaction(_prevState: any, formData: FormData) {
     };
   }
 
-  const { orgId, type, description, category, amount, date, notes } = result.data;
+  const { org_id, type, description, category, amount, date, notes } = result.data;
 
   // Insert to database
   // I updated the insertion statement to return the inserted row
@@ -51,8 +39,8 @@ export async function createTransaction(_prevState: any, formData: FormData) {
   const { data, error } = await supabase
     .from('transactions')
     .insert({
-      org_id: orgId, created_by: userId, date: date, description: description, category: category,
-      type: type, amount: amount, notes: notes
+      org_id, created_by: userId, date, description, category,
+      type, amount, notes
     })
     .select()
     .single();
@@ -64,11 +52,25 @@ export async function createTransaction(_prevState: any, formData: FormData) {
     };
   }
 
+  // Fetch the user's role
+  const { data: roleData, error: roleError } = await supabase
+  .from("org_members")
+  .select("role")
+  .eq("user_id", userId)
+  .eq("org_id", org_id)
+  .single()
+
+  if(roleError) {
+    console.error(error)
+    return {
+      message: "Database Error: Failed to fetch current user's role of active organization"
+    };
+  }
+
   // Insert audit log entry for transaction creation
   await logAuditEntry({
-    orgId: orgId,
+    orgId: org_id,
     userId: userId,
-    created_at: date,
     action: "CREATE",
     entity_type: "transaction",
     entity_id: data.transaction_id,
@@ -77,20 +79,20 @@ export async function createTransaction(_prevState: any, formData: FormData) {
       description, category, type, amount, date, notes
     },
     type: AuditLogType.FINANCIAL,
+    display_role: roleData?.role,
   });
 
   revalidatePath('/transaction')
   revalidatePath("/dashboard");
-  redirect('/transaction')
+  redirect(`/transaction?orgId=${org_id}`)
 }
 
-export async function updateTransaction(_prevState: any, formData: FormData) {
+export async function updateTransaction(_prevState: ActionState, formData: FormData) : Promise<ActionState> {
   const supabase = await createClient();
-  const fetchOrgId = await fetchOrgFromCurrentUser();
 
-  const result = TransactionSchema.safeParse({
+  const result = TransactionsSchema.safeParse({
     transaction_id: formData.get("transId"),
-    orgId: fetchOrgId,
+    org_id: formData.get("orgId"),
     type: formData.get("type"),
     description: formData.get("desc"),
     category: formData.get("category"),
@@ -108,7 +110,7 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
   }
 
 
-  const { transaction_id, orgId, type, description, category, amount, date,
+  const { transaction_id, org_id, type, description, category, amount, date,
     notes } = result.data;
 
   // Fetch existing transaction data before update for audit log
@@ -129,7 +131,7 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
   const { data: afterData, error } = await supabase
     .from('transactions')
     .update({
-      org_id: orgId, date, description,
+      org_id, date, description,
       category, type, amount, notes
     })
     .eq("transaction_id", transaction_id)
@@ -137,7 +139,6 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
     .single();
 
 
-  // TODO: Handle error better
   if (error) {
     console.error(error)
     return {
@@ -145,28 +146,45 @@ export async function updateTransaction(_prevState: any, formData: FormData) {
     };
   }
 
+  // Fetch current user's role
+  const { data: roleData, error: roleError } = await supabase
+  .from('org_members')
+  .select('role') 
+  .eq('user_id', beforeData.created_by)
+  .eq('org_id', org_id)
+  .single()
+
+  if (roleError){
+    console.error(roleError);
+    return {
+      message: "Database Error: Failed to fetch current user's role of active organization"
+    };
+  }
+
   // Insert audit log entry for transaction update
   // Only log if there are changes to the transaction data
   if (JSON.stringify(beforeData) !== JSON.stringify(afterData)) {
     await logAuditEntry({
-      orgId: orgId,
+      orgId: org_id,
       userId: beforeData.created_by,
-      created_at: afterData.date,
       action: "UPDATE",
       entity_type: "transaction",
       entity_id: transaction_id,
       before_data: beforeData,
       after_data: afterData,
       type: AuditLogType.FINANCIAL,
+      display_role: roleData?.role,
     });
   }
 
-
   revalidatePath('/transaction')
-  redirect('/transaction')
+  redirect(`/transaction?orgId=${org_id}`)
 }
 
-export async function deleteTransaction(transaction_id: string, _formData: FormData) {
+export async function deleteTransaction(
+  transaction_id: string,
+  _formData: FormData
+): Promise<void> {
   const supabase = await createClient();
 
   // Fetch existing transaction data before deletion for audit log
@@ -178,6 +196,20 @@ export async function deleteTransaction(transaction_id: string, _formData: FormD
 
   if (beforeDataError || !beforeData) {
     console.error(beforeDataError);
+    // return {
+    //   message: `Error: ${beforeDataError}`
+    // };
+  }
+
+  const { data: roleData, error: roleError } = await supabase
+  .from('org_members')
+  .select('role')
+  .eq('user_id', beforeData.created_by)
+  .eq('org_id', beforeData.org_id)
+  .single()
+
+  if (roleError){
+    console.error(roleError);
     return;
   }
 
@@ -187,22 +219,21 @@ export async function deleteTransaction(transaction_id: string, _formData: FormD
     .eq("transaction_id", transaction_id);
   if (error) {
     console.error('Database Error: Failed to Delete Transaction.', error)
+    // return error;
   }
 
   // Insert audit log entry for transaction deletion
   await logAuditEntry({
     orgId: beforeData.org_id,
     userId: beforeData.created_by,
-    created_at: beforeData.date,
     action: "DELETE",
     entity_type: "transaction",
     entity_id: transaction_id,
     before_data: beforeData,
     after_data: null,
     type: AuditLogType.FINANCIAL,
+    display_role: roleData?.role,
   });
 
   revalidatePath('/transaction')
 }
-
-export type Transaction = z.infer<typeof TransactionSchema>;

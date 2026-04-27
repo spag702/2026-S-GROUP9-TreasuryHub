@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
-import { getFiles } from '../../lib/files'
 import UploadModal from '../../components/UploadModal'
 import FileViewer from '../../components/FileViewer'
 import BackButton from '@/components/BackButton'
@@ -11,6 +10,8 @@ import BackButton from '@/components/BackButton'
 import OrgDropDown from '@/components/OrgDropDown'
 import { Skeleton } from '@/components/Skeleton'
 import { canUploadFiles, canViewFiles } from '@/lib/roles'
+import { getFiles, deleteFile } from '../../lib/files'
+
 
 type SkeletonPulseProps = { className?: string }
 function SkeletonPulse({ className = '' }: SkeletonPulseProps) {
@@ -163,6 +164,7 @@ function FilesPageContent() {
 
     const canAccessFiles = canViewFiles(role)
     const canUpload = canUploadFiles(role)
+    const canDelete = canUploadFiles(role)
 
     const filteredFiles = files.filter((file) => {
         if (typeFilter !== 'all' && file.file_type !== typeFilter) return false
@@ -354,16 +356,34 @@ function FilesPageContent() {
                                     {file.file_type} · {new Date(file.uploaded_at).toLocaleDateString()}
                                 </p>
                             </div>
-                            <button
-                                onClick={() => setViewingFile({
-                                    filePath: file.file_path,
-                                    fileName: file.file_name,
-                                    mimeType: file.mime_type,
-                                })}
-                                className="text-blue-600 text-sm"
-                            >
-                                View
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setViewingFile({
+                                        filePath: file.file_path,
+                                        fileName: file.file_name,
+                                        mimeType: file.mime_type,
+                                    })}
+                                    className="text-blue-400 text-sm hover:text-blue-300 transition"
+                                >
+                                    View
+                                </button>
+                                {canDelete && (
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm(`Delete "${file.file_name}"?`)) return
+                                            try {
+                                                await deleteFile(file.file_id, file.file_path)
+                                                await loadFiles()
+                                            } catch {
+                                                setError('Failed to delete file')
+                                            }
+                                        }}
+                                        className="text-red-400 text-sm hover:text-red-300 transition"
+                                    >
+                                        Delete
+                                    </button>
+                                )}
+                            </div>
                         </li>
                     ))}
                 </ul>
