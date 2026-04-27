@@ -601,7 +601,15 @@ const handleEditSubmit = async () => {
                 Save Changes
               </button>
               <button
-                onClick={() => { dialogRef.current?.close(); setEditingTask(null); }}
+                onClick={() => { 
+                  dialogRef.current?.close(); 
+                  setEditingTask(null);
+                  setTitle("");
+                  setTaskType("TODO");
+                  setAssignType("role");
+                  setAssignedTo("");
+                  setDueDate("");
+                }}
                 className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-white/[0.15] bg-transparent dark:bg-white/[0.05] text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
               >
                 Cancel
