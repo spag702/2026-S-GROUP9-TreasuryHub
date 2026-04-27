@@ -35,9 +35,8 @@ function isValidFutureDate(dateString?: string) {
   return selectedDate > today;
 }
 
-async function isValidAssignment(assignType: string, assignedTo: string) {
+async function isValidAssignment(assignType: string, assignedTo: string, orgId: string) {
   const supabase = await createClient();
-  const orgId = await fetchOrgFromCurrentUser();
 
   const { data: orgMembers, error: orgMembersError } = await supabase
     .from("org_members")
@@ -89,10 +88,9 @@ export async function getTasks(orgId: string) {
   return { error: null, data: data ?? [] };
 }
 
-export async function getTaskAssignmentOptions() {
+export async function getTaskAssignmentOptions(orgId: string) { 
   const supabase = await createClient();
-  const orgId = await fetchOrgFromCurrentUser();
-  
+ 
 
   const { data: orgMembers, error: orgMembersError } = await supabase
     .from("org_members")
@@ -176,7 +174,7 @@ export async function addTaskAction(formData: {
     return { error: "Please assign the task to a role or individual." };
   }
 
-  if (!(await isValidAssignment(assignType, assignedTo))) {
+  if (!(await isValidAssignment(assignType, assignedTo, orgId))) {
     return { error: "Task must be assigned to an existing role or member." };
   }
 
@@ -274,7 +272,7 @@ export async function updateTaskAction(
     return { error: "Please assign the task to a role or individual." };
   }
 
-  if (!(await isValidAssignment(assignType, assignedTo))) {
+  if (!(await isValidAssignment(assignType, assignedTo, orgId))) {
     return { error: "Task must be assigned to an existing role or member." };
   }
 

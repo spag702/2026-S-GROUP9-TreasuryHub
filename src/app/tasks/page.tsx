@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef} from "react";
 import {
   getTasks,
   addTaskAction,
@@ -96,6 +96,9 @@ function TasksPageContent() {
   const [existingRoles, setExistingRoles] = useState<string[]>([]);
   const [existingMembers, setExistingMembers] = useState<string[]>([]);
 
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
   /*
     This loads tasks from Supabase when the page first opens.
   */
@@ -125,7 +128,7 @@ function TasksPageContent() {
 
       setTasks(formattedTasks);
 
-      const optionsResult = await getTaskAssignmentOptions();
+      const optionsResult = await getTaskAssignmentOptions(orgId);
 
       if (optionsResult.error) {
         alert(optionsResult.error);
@@ -238,96 +241,52 @@ function TasksPageContent() {
     FUNCTION: editTask
     Lets the user edit all main task fields.
   */
-  const editTask = async (id: number) => {
-    if (!hasOfficerAccess(currentUserRole)) {
-      alert("Only officer-level users or above can edit tasks.");
-      return;
-    }
+  const editTask = (id: number) => {
+  if (!hasOfficerAccess(currentUserRole)) {
+    alert("Only officer-level users or above can edit tasks.");
+    return;
+  }
 
-    if (!orgId) {
-      alert("Organization ID was not found.");
-      return;
-    }
+  if (!orgId) {
+    alert("Organization ID was not found.");
+    return;
+  }
 
-    const taskToEdit = tasks.find((task) => task.id === id);
-    if (!taskToEdit) return;
+  const taskToEdit = tasks.find((task) => task.id === id);
+  if (!taskToEdit) return;
 
-    const newTitle = prompt("Edit task title:", taskToEdit.title);
-    if (!newTitle || !newTitle.trim()) {
-      alert("Task title cannot be empty.");
-      return;
-    }
+  // pre-populate the existing form state with the task's current values
+  setTitle(taskToEdit.title);
+  setTaskType(taskToEdit.type);
+  setAssignType(taskToEdit.assignType);
+  setAssignedTo(taskToEdit.assignedTo);
+  setDueDate(taskToEdit.dueDate || "");
+  setEditingTask(taskToEdit);
 
-    const newType = prompt(
-      "Edit task type (TODO, EVENT, INVOICE, PAYROLL, PAYMENT, FUNDRAISER, MEETING):",
-      taskToEdit.type
-    );
-    if (!newType || !newType.trim()) {
-      alert("Task type cannot be empty.");
-      return;
-    }
+  dialogRef.current?.showModal();
+};
 
-    const newAssignTypeInput = prompt(
-      "Assign to 'role' or 'individual':",
-      taskToEdit.assignType
-    );
+const handleEditSubmit = async () => {
+  if (!editingTask || !orgId) return;
 
-    if (
-      newAssignTypeInput !== "role" &&
-      newAssignTypeInput !== "individual"
-    ) {
-      alert("Assignment type must be either 'role' or 'individual'.");
-      return;
-    }
+  const result = await updateTaskAction(editingTask.id, {
+    title,
+    taskType,
+    assignType,
+    assignedTo,
+    dueDate,
+    orgId,
+  });
 
-    const newAssignedTo = prompt(
-      `Enter existing ${newAssignTypeInput}:`,
-      taskToEdit.assignedTo
-    );
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
 
-    if (!newAssignedTo || !newAssignedTo.trim()) {
-      alert("Assigned value cannot be empty.");
-      return;
-    }
-
-    // validate edited assignment
-    if (
-      (newAssignTypeInput === "role" &&
-        !existingRoles.includes(newAssignedTo)) ||
-      (newAssignTypeInput === "individual" &&
-        !existingMembers.includes(newAssignedTo))
-    ) {
-      alert("Task must be assigned to an existing role or member.");
-      return;
-    }
-
-    const newDueDate = prompt(
-      "Edit due date in YYYY-MM-DD format (leave blank for no due date):",
-      taskToEdit.dueDate || ""
-    );
-
-    if (newDueDate && !isValidFutureDate(newDueDate)) {
-      alert("Due date must be a valid future date.");
-      return;
-    }
-
-    const result = await updateTaskAction(id, {
-      title: newTitle,
-      taskType: newType,
-      assignType: newAssignTypeInput,
-      assignedTo: newAssignedTo,
-      dueDate: newDueDate || "",
-      orgId,
-    });
-
-    if (result.error) {
-      alert(result.error);
-      return;
-    }
-
-    // simple refresh so the newest DB data shows up right away
-    window.location.reload();
-  };
+  dialogRef.current?.close();
+  setEditingTask(null);
+  window.location.reload();
+};
 
   /*
     FUNCTION: deleteTask
@@ -407,8 +366,11 @@ function TasksPageContent() {
   return (
     <div style={{ padding: "20px" }}>
       <div className="flex justify-between mb-6">
-        <h1>Task List</h1>
-        <BackButton></BackButton>
+        <h1 className={`text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1`}>
+                              Task List</h1>
+      
+          <BackButton></BackButton>
+        
       </div>
  
       {/* alert banner for tasks that are getting close to due date */}
@@ -448,87 +410,70 @@ function TasksPageContent() {
           <SkeletonPulse className="h-8 w-24" />
         </div>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-            maxWidth: "400px",
-          }}
-        >
-          {/* task title */}
-          <input
-            placeholder="Task title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
- 
-          {/* task type dropdown */}
-          <select value={taskType} onChange={(e) => setTaskType(e.target.value)}>
-            <option value="TODO">To-Do</option>
-            <option value="EVENT">Event</option>
-            <option value="INVOICE">Invoice Due Date</option>
-            <option value="PAYROLL">Payroll Deadline</option>
-            <option value="PAYMENT">Scheduled Payment</option>
-            <option value="FUNDRAISER">Fundraiser</option>
-            <option value="MEETING">Meeting</option>
-          </select>
- 
-          {/* choose whether assignment is to a role or individual */}
-          <select
-            value={assignType}
-            onChange={(e) =>
-              setAssignType(e.target.value as "role" | "individual")
-            }
-          >
-            <option value="role">Assign to Role</option>
-            <option value="individual">Assign to Individual</option>
-          </select>
- 
-          {/* assignment dropdown changes depending on assignType */}
-          <select
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-          >
-            <option value="">Select Assignment</option>
- 
-            {assignType === "role"
-              ? existingRoles.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))
-              : existingMembers.map((member) => (
-                  <option key={member} value={member}>
-                    {member}
-                  </option>
-                ))}
-          </select>
- 
-          {/* optional due date */}
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
- 
-          {/* add task button */}
-          <button onClick={addTask}>Add Task</button>
-        </div>
+      <div className="flex flex-col gap-3" style={{ maxWidth: "400px" }}>
+  
+        <input
+          placeholder="Task title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        />
+
+        <select value={taskType} onChange={(e) => setTaskType(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+          <option value="TODO">To-Do</option>
+          <option value="EVENT">Event</option>
+          <option value="INVOICE">Invoice Due Date</option>
+          <option value="PAYROLL">Payroll Deadline</option>
+          <option value="PAYMENT">Scheduled Payment</option>
+          <option value="FUNDRAISER">Fundraiser</option>
+          <option value="MEETING">Meeting</option>
+        </select>
+
+        <select value={assignType}
+          onChange={(e) => setAssignType(e.target.value as "role" | "individual")}
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+          <option value="role">Assign to Role</option>
+          <option value="individual">Assign to Individual</option>
+        </select>
+
+        <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+          <option value="">Select Assignment</option>
+          {assignType === "role"
+            ? existingRoles.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))
+            : existingMembers.map((member) => (
+                <option key={member} value={member}>{member}</option>
+              ))}
+        </select>
+
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        />
+
+        <button onClick={addTask}
+          className="px-3 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors text-sm">
+          Add Task
+        </button>
+
+      </div>
       )}
- 
-      {/* task list */}
-      <ul style={{ marginTop: "20px" }}>
+
+      {/* TASK LIST */}
+      <ul style={{ marginTop: "20px", maxWidth: "600px" }}>
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
               <li
                 key={i}
-                style={{
-                  marginBottom: "12px",
-                  padding: "10px",
-                  border: "1px solid #ccc",
-                  borderRadius: "8px",
-                }}
+                className="mb-6 rounded-2xl border border-black/[0.08] bg-black/[0.02] p-6 dark:border-white/[0.12] dark:bg-white/[0.03]"
               >
                 <SkeletonPulse className="h-4 w-44" />
                 <div style={{ marginTop: "6px" }}>
@@ -547,44 +492,132 @@ function TasksPageContent() {
               </li>
             ))
           : tasks.map((task) => (
-              <li
-                key={task.id}
-                style={{
-                  marginBottom: "12px",
-                  padding: "10px",
-                  border: "1px solid #ccc",
-                  borderRadius: "8px",
-                }}
+          <li
+            key={task.id}
+            className="mb-6 rounded-2xl border border-black/[0.08] bg-black/[0.02] p-6 dark:border-white/[0.12] dark:bg-white/[0.03]"
+          >
+            {/* main task info */}
+            <div className="flex items-center justify-between mb-2">
+              <strong className="text-base">{task.title}</strong>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                {task.type}
+              </span>
+            </div>
+
+            <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-col gap-1">
+              <div>Assigned {task.assignType === "role" ? "Role" : "Individual"}: <span className="text-gray-700 dark:text-gray-200">{task.assignedTo}</span></div>
+              {task.dueDate && <div>Due: <span className="text-gray-700 dark:text-gray-200">{task.dueDate}</span></div>}
+            </div>
+
+            <div>{getAlert(task.dueDate)}</div>
+
+            {/* action buttons */}
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => deleteTask(task.id)}
+                className="px-3 py-1 text-sm rounded-md bg-red-700 text-white hover:bg-red-600 transition-colors"
               >
-                {/* main task info */}
-                <strong>{task.title}</strong>
-                <div>Type: {task.type}</div>
-                <div>
-                  Assigned {task.assignType === "role" ? "Role" : "Individual"}:{" "}
-                  {task.assignedTo}
-                </div>
- 
-                {task.dueDate && <div>Due: {task.dueDate}</div>}
- 
-                <div>{getAlert(task.dueDate)}</div>
- 
-                {/* action buttons */}
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  style={{ marginTop: "8px", marginRight: "8px" }}
-                >
-                  Delete
-                </button>
- 
-                <button
-                  onClick={() => editTask(task.id)}
-                  style={{ marginTop: "8px" }}
-                >
-                  Edit
-                </button>
-              </li>
-            ))}
+                Delete
+              </button>
+
+              <button
+                onClick={() => editTask(task.id)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-100 dark:border-white/[0.15] dark:bg-white/[0.05] dark:text-white dark:hover:bg-white/[0.08]"
+              >
+                Edit
+              </button>
+            </div>
+          </li>
+        ))}
       </ul>
+
+       {/* Edit Task Dialog */}
+        <dialog ref={dialogRef}
+          className="rounded-2xl border border-black/[0.08] dark:border-white/[0.12] p-6 backdrop:bg-black/50"
+          style={{ 
+            color: "var(--foreground)",
+            backdropFilter: "blur(16px)",
+            minWidth: "350px",
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}>
+          <h2 className="text-lg font-semibold mb-4">Edit Task</h2>
+
+          <div className="flex flex-col gap-3">
+            <input
+              placeholder="Task title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+
+            <select value={taskType} onChange={(e) => setTaskType(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+              <option value="TODO">To-Do</option>
+              <option value="EVENT">Event</option>
+              <option value="INVOICE">Invoice Due Date</option>
+              <option value="PAYROLL">Payroll Deadline</option>
+              <option value="PAYMENT">Scheduled Payment</option>
+              <option value="FUNDRAISER">Fundraiser</option>
+              <option value="MEETING">Meeting</option>
+            </select>
+
+            <select value={assignType}
+              onChange={(e) => setAssignType(e.target.value as "role" | "individual")}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+              <option value="role">Assign to Role</option>
+              <option value="individual">Assign to Individual</option>
+            </select>
+
+            <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+              <option value="">Select Assignment</option>
+              {assignType === "role"
+                ? existingRoles.map((role) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))
+                : existingMembers.map((member) => (
+                    <option key={member} value={member}>{member}</option>
+                  ))}
+            </select>
+
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={handleEditSubmit}
+                className="px-3 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={() => { 
+                  dialogRef.current?.close(); 
+                  setEditingTask(null);
+                  setTitle("");
+                  setTaskType("TODO");
+                  setAssignType("role");
+                  setAssignedTo("");
+                  setDueDate("");
+                }}
+                className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-white/[0.15] bg-transparent dark:bg-white/[0.05] text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </dialog>
+
     </div>
   );
 }
