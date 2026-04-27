@@ -89,10 +89,9 @@ export async function getTasks(orgId: string) {
   return { error: null, data: data ?? [] };
 }
 
-export async function getTaskAssignmentOptions() {
+export async function getTaskAssignmentOptions(orgId: string) { 
   const supabase = await createClient();
-  const orgId = await fetchOrgFromCurrentUser();
-  
+ 
 
   const { data: orgMembers, error: orgMembersError } = await supabase
     .from("org_members")

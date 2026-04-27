@@ -128,7 +128,7 @@ function TasksPageContent() {
 
       setTasks(formattedTasks);
 
-      const optionsResult = await getTaskAssignmentOptions();
+      const optionsResult = await getTaskAssignmentOptions(orgId);
 
       if (optionsResult.error) {
         alert(optionsResult.error);
@@ -533,9 +533,10 @@ const handleEditSubmit = async () => {
 
        {/* Edit Task Dialog */}
         <dialog ref={dialogRef}
-          className="rounded-2xl border border-black/[0.08] bg-white/[0.98] dark:border-white/[0.12] dark:bg-white/[0.03] p-6 backdrop:bg-black/50"
+          className="rounded-2xl border border-black/[0.08] dark:border-white/[0.12] p-6 backdrop:bg-black/50"
           style={{ 
             color: "var(--foreground)",
+            backdropFilter: "blur(16px)",
             minWidth: "350px",
             position: "fixed",
             top: "50%",
